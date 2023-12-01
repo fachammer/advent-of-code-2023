@@ -1,4 +1,6 @@
-class Day1Part1 extends DayPart(1, 1, 142, 56042):
+class Day1Part1 extends DayPart[Int](1, 1):
+  testExample(142)
+  testInput(56042)
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
@@ -10,10 +12,19 @@ class Day1Part1 extends DayPart(1, 1, 142, 56042):
 
     s"${digits.head}${digits.last}".toInt
 
-class Day1Part2 extends DayPart(1, 2, 281, 55358):
+class Day1Part2 extends DayPart[Int](1, 2):
+  testExample(281)
+  testInput(55358)
+
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
+  testFn(
+    calibrationValue,
+    "two1nine" -> 29,
+    "eightwothree" -> 83,
+    "abcone2threexyz" -> 13
+  )
   def calibrationValue(line: String) =
     val digits = Map(
       "one" -> "1",
