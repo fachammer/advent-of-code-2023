@@ -1,8 +1,9 @@
 package day01
 
 class part1 extends test.DayPart[Int](1, 1):
-  testFile("example1", 142)
-  testFile("input", 56042)
+  testFile("example1" -> 142)
+  testFile("input" -> 56042)
+
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
@@ -15,13 +16,13 @@ class part1 extends test.DayPart[Int](1, 1):
     s"${digits.head}${digits.last}".toInt
 
 class part2 extends test.DayPart[Int](1, 2):
-  testFile("example2", 281)
-  testFile("input", 55358)
+  testFile("example2" -> 281)
+  testFile("input" -> 55358)
+
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
-  testFn(
-    calibrationValue,
+  calibrationValue.testCases(
     "two1nine" -> 29,
     "eightwothree" -> 83,
     "abcone2threexyz" -> 13

@@ -11,18 +11,21 @@ abstract class DayPart[T](
 ) extends munit.FunSuite:
   def testString(
       inputType: String,
-      input: String,
-      expectedOutput: T
+      inputExpectedOuput: (String, T)
   ) =
     test(inputType) {
-      assertEquals(run(input), expectedOutput)
+      assertEquals(run(inputExpectedOuput._1), inputExpectedOuput._2)
     }
 
-  def testFile(inputType: String, expectedOutput: T) =
+  def testFile(inputTypeExpectedOutput: (String, T)) =
     testString(
-      inputType,
-      Source.fromResource(f"day$day%02d/$inputType").mkString,
-      expectedOutput
+      inputTypeExpectedOutput._1,
+      (
+        Source
+          .fromResource(f"day$day%02d/${inputTypeExpectedOutput._1}")
+          .mkString,
+        inputTypeExpectedOutput._2
+      )
     )
 
   inline def testFn[T, R](
@@ -35,6 +38,10 @@ abstract class DayPart[T](
       }
 
   def run(input: String): T
+
+  extension [T, R](inline fn: T => R)
+    inline def testCases(expectedResults: (T, R)*) =
+      testFn(fn, expectedResults*)
 
 class NamedFunction[T, R](name: String, f: Function[T, R])
     extends Function[T, R]:
