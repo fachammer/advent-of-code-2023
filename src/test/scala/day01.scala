@@ -1,6 +1,8 @@
-class Day1Part1 extends DayPart[Int](1, 1):
-  testExample(142)
-  testInput(56042)
+package day01
+
+class part1 extends test.DayPart[Int](1, 1):
+  testFile("example1", 142)
+  testFile("input", 56042)
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
@@ -12,10 +14,9 @@ class Day1Part1 extends DayPart[Int](1, 1):
 
     s"${digits.head}${digits.last}".toInt
 
-class Day1Part2 extends DayPart[Int](1, 2):
-  testExample(281)
-  testInput(55358)
-
+class part2 extends test.DayPart[Int](1, 2):
+  testFile("example2", 281)
+  testFile("input", 55358)
   def run(input: String) =
     input.linesIterator.map(calibrationValue).sum
 

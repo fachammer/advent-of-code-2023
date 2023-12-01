@@ -1,3 +1,5 @@
+package test
+
 import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
@@ -7,23 +9,21 @@ abstract class DayPart[T](
     val day: Int,
     val part: Int
 ) extends munit.FunSuite:
-  def dayTest(
-      inputType: "example" | "input",
+  def testString(
+      inputType: String,
       input: String,
       expectedOutput: T
   ) =
-    test(f"day$day%02d-$part $inputType") {
+    test(inputType) {
       assertEquals(run(input), expectedOutput)
     }
 
-  def fileToString(inputType: "example" | "input") =
-    Source.fromResource(f"day$day%02d-$part.$inputType").mkString
-
-  def dayTestFile(inputType: "example" | "input", expectedOutput: T) =
-    dayTest(inputType, fileToString(inputType), expectedOutput)
-
-  def testExample(expectedOutput: T) = dayTestFile("example", expectedOutput)
-  def testInput(expectedOutput: T) = dayTestFile("input", expectedOutput)
+  def testFile(inputType: String, expectedOutput: T) =
+    testString(
+      inputType,
+      Source.fromResource(f"day$day%02d/$inputType").mkString,
+      expectedOutput
+    )
 
   inline def testFn[T, R](
       inline fn: T => R,
