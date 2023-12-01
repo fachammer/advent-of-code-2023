@@ -33,3 +33,5 @@ metals.sbt
 
 /target
 .direnv
+**/*.example
+**/*.input
