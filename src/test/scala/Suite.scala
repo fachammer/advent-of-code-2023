@@ -1,31 +1,21 @@
 import scala.io.Source
-// For more information on writing tests, see
-// https://scalameta.org/munit/docs/getting-started.html
-class Suite extends munit.FunSuite {
-  test("day01-1 example") {
-    val lines = Source.fromFile("day01-1.example").mkString
-    assertEquals(sumOfCalibrationValues(lines), 142)
-  }
 
-  test("day01-1 input") {
-    val lines = Source.fromFile("day01-1.input").mkString
-    assertEquals(sumOfCalibrationValues(lines), 56042)
-  }
+abstract class DayPart(
+    val day: Int,
+    val part: 1 | 2,
+    val example: Any,
+    val input: Any
+) extends munit.FunSuite:
+  def dayTest(
+      inputType: "example" | "input",
+      expectedOutput: Any
+  ) =
+    test(f"day$day%02d-$part $inputType") {
+      val lines = Source.fromResource(f"day$day%02d-$part.$inputType").mkString
+      assertEquals(run(lines), expectedOutput)
+    }
 
-  test("day01-2 example") {
-    val lines = Source.fromFile("day01-2.example").mkString
-    assertEquals(sumOfCalibrationValuesWithDigitNames(lines), 281)
-  }
+  dayTest("example", example)
+  dayTest("input", input)
 
-  test("day01-2 input") {
-    val lines = Source.fromFile("day01-2.input").mkString
-    assertEquals(sumOfCalibrationValuesWithDigitNames(lines), 55358)
-  }
-
-  test("overlapping digit names") {
-    assertEquals(
-      calibrationValueWithDigitNames("9963onefourthree6oneightq"),
-      98
-    )
-  }
-}
+  def run(input: String): Any
