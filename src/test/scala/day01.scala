@@ -41,7 +41,7 @@ class part2 extends test.DayPart[Int](1, 2):
 
     extension (m: String) def toDigit = digits.get(m).getOrElse(m)
 
-    val digitPattern = (digits.keys ++ Iterator("[0-9]")).mkString("|");
+    val digitPattern = (digits.keys ++ Seq("[0-9]")).mkString("|");
     val firstDigit = digitPattern.r.findFirstIn(line).get.toDigit
     val lastDigit = s".*($digitPattern)".r
       .findFirstMatchIn(line)
