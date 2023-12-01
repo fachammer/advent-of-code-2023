@@ -1,10 +1,8 @@
 package day01
 
-class part1 extends test.DayPart[Int](1, 1):
-  testFile("example1" -> 142)
-  testFile("input" -> 56042)
-
-  def run(input: String) =
+class part1 extends test.DayPart(1) {
+  sumOfCalibrationValues.testCasesFromFile("example1" -> 142, "input" -> 56042)
+  def sumOfCalibrationValues(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
   def calibrationValue(line: String): Int =
@@ -14,12 +12,11 @@ class part1 extends test.DayPart[Int](1, 1):
       .map(Character.digit(_, 10))
 
     s"${digits.head}${digits.last}".toInt
+}
 
-class part2 extends test.DayPart[Int](1, 2):
-  testFile("example2" -> 281)
-  testFile("input" -> 55358)
-
-  def run(input: String) =
+class part2 extends test.DayPart(1) {
+  sumOfCalibrationValues.testCasesFromFile("example2" -> 281, "input" -> 55358)
+  def sumOfCalibrationValues(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
   calibrationValue.testCases(
@@ -51,3 +48,6 @@ class part2 extends test.DayPart[Int](1, 2):
       .toDigit
 
     s"$firstDigit$lastDigit".toInt
+
+  sumOfCalibrationValues.testCases("123123\n112" -> 25)
+}

@@ -3,50 +3,36 @@ package test
 import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
-import scala.quoted.Type
 
-abstract class DayPart[T](
-    val day: Int,
-    val part: Int
+abstract class DayPart(
+    val day: Int
 ) extends munit.FunSuite:
-  def testString(
-      inputType: String,
-      inputExpectedOuput: (String, T)
-  ) =
-    test(inputType) {
-      assertEquals(run(inputExpectedOuput._1), inputExpectedOuput._2)
+  def testFnWithNames[T, R](
+      fn: T => R,
+      expectedResults: (String, T, R)*
+  ) = for (testName, input, expectedOutput) <- expectedResults do
+    test(testName) {
+      assertEquals(fn(input), expectedOutput)
     }
-
-  def testFile(inputTypeExpectedOutput: (String, T)) =
-    testString(
-      inputTypeExpectedOutput._1,
-      (
-        Source
-          .fromResource(f"day$day%02d/${inputTypeExpectedOutput._1}")
-          .mkString,
-        inputTypeExpectedOutput._2
-      )
-    )
-
-  inline def testFn[T, R](
-      inline fn: T => R,
-      expectedResults: (T, R)*
-  ) =
-    for (input, expectedOutput) <- expectedResults do
-      test(s"${fn.exprString}($input) = $expectedOutput") {
-        assertEquals(fn(input), expectedOutput)
-      }
-
-  def run(input: String): T
 
   extension [T, R](inline fn: T => R)
     inline def testCases(expectedResults: (T, R)*) =
-      testFn(fn, expectedResults*)
+      testFnWithNames(
+        fn,
+        expectedResults.map(x =>
+          (s"${fn.exprString}(${x._1}) = ${x._2}", x._1, x._2)
+        )*
+      )
 
-class NamedFunction[T, R](name: String, f: Function[T, R])
-    extends Function[T, R]:
-  def apply(v: T) = f(v)
-  override def toString = name
+  extension [R](inline fn: String => R)
+    inline def testCasesFromFile(expectedResults: (String, R)*) =
+      testFnWithNames(
+        fn,
+        expectedResults.map((x) =>
+          val input = Source.fromResource(f"day$day%02d/${x._1}").mkString
+          (s"${fn.exprString}(file(${x._1})) = ${x._2}", input, x._2)
+        )*
+      )
 
 def exprStringCode[T, R](f: Expr[T => R])(using Quotes): Expr[String] =
   Expr(f.show.split(" ").last.split("\\(").head.split("\\.").last)
