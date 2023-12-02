@@ -1,5 +1,3 @@
-package main
-
 import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
@@ -9,12 +7,40 @@ import scala.collection.mutable
 import utest.TestRunner
 import utest.Tests
 import utest.given
+import utest.test
+import utest.framework.Formatter
+import utest.framework.HTree
+import utest.framework.Result
+import utest.ufansi.Str
+import scala.annotation.StaticAnnotation
+import scala.language.experimental
+
+object TestFormatter extends utest.framework.Formatter:
+  override def formatColor: Boolean = true
+
+  override def formatWrapWidth: Int = 40
+
+  override def formatSummary(
+      topLevelName: String,
+      results: HTree[String, Result]
+  ): Option[Str] = Some("hello")
+
+class TestCases[T, R](val cases: (T, R)*)
+    extends scala.annotation.StaticAnnotation:
+  def transform(using Quotes)(
+      tree: x$1.reflect.Definition
+  ): List[x$1.reflect.Definition] = List(tree)
 
 @main def main =
-  import days.*
   day01
   day02
-  TestRunner.runAndPrint(utests, "Advent of Code 2023")
+  val results = TestRunner.runAndPrint(
+    utests(tests.map(x => (x._1, x._2.toMap)).toMap),
+    "Advent of Code 2023"
+  )
+  val (summary, _, _) =
+    TestRunner.renderResults(Seq("Advent of Code 2023" -> results))
+  println(summary)
 
 case class Day(val day: Int)
 given Conversion[Int, Day] with
@@ -24,7 +50,7 @@ def file(name: String)(using day: Day) =
   Source.fromResource(f"day${day.day}%02d/$name").mkString
 
 var tests = mutable.Map[Int, mutable.Map[String, () => Any]]()
-def utests =
+def utests(tests: Map[Int, Map[String, () => Any]]) =
   val sortedTests =
     tests.toSeq.sortBy(_._1).map(x => (x._1, x._2.toSeq.sortBy(_._1)))
   val nameTree =
@@ -38,7 +64,7 @@ def utests =
               .sortBy(_._1)
               .map(y =>
                 Tree(
-                  y._1.replace("\n", "\\n").substring(0, 50.min(y._1.length()))
+                  y._1.replace("\n", "\\n").substring(0, y._1.length().min(80))
                 )
               )*
           )
@@ -58,21 +84,22 @@ def utests =
   Tests(nameTree, callTree)
 
 extension [T, R](fn: T => R)(using day: Day)
-  def testCasesWithNames(expectedResults: (String, (T, R))*) =
-    var dayTests = tests.getOrElseUpdate(day.day, mutable.Map())
-    for (testName, (input, expectedOutput)) <- expectedResults do
-      dayTests.addOne(testName, () => fn(input) ==> expectedOutput)
+  def testCasesWithNames(expectedResults: (String, (T, R))*): Tests =
+    val newTests =
+      expectedResults.map(x => (x._1, () => fn(x._2._1) ==> x._2._2))
+    tests.getOrElseUpdate(day.day, mutable.Map()).addAll(newTests)
+    utests(Map(day.day -> newTests.toMap))
 
-extension [T, R](inline fn: T => R)(using day: Day)
-  inline def testCases(expectedResults: (T, R)*) =
+extension [T, R](inline fn: T => R)(using Day)
+  inline def testCases(inline expectedResults: (T, R)*): Tests =
     fn.testCasesWithNames(
       expectedResults.map(x =>
         (s"${fn.exprString}(${x._1}) = ${x._2}", (x._1, x._2))
       )*
     )
 
-extension [R](inline fn: String => R)(using day: Day)
-  inline def testCasesFromFile(expectedResults: (String, R)*) =
+extension [R](inline fn: String => R)(using Day)
+  inline def testCasesFromFile(expectedResults: (String, R)*): Tests =
     fn.testCasesWithNames(
       expectedResults.map((x) =>
         val input = file(x._1)

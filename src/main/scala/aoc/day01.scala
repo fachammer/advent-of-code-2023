@@ -1,6 +1,3 @@
-package days
-import main.{*, given}
-
 object day01:
   given Day = 1
   sumOfCalibrationValues.testCases(
