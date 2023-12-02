@@ -1,9 +1,6 @@
 object day01:
   given Day = 1
-  sumOfCalibrationValues.testCases(
-    file("example1") -> 142,
-    file("input")    -> 56042
-  )
+
   def sumOfCalibrationValues(input: String) =
     input.linesIterator.map(calibrationValue).sum
 
@@ -15,19 +12,9 @@ object day01:
 
     s"${digits.head}${digits.last}".toInt
 
-  sumOfCalibrationValuesIncludingWords.testCases(
-    file("example2") -> 281,
-    "123123\n112"    -> 25,
-    file("input")    -> 55358
-  )
   def sumOfCalibrationValuesIncludingWords(input: String) =
     input.linesIterator.map(calibrationValueIncludingWords).sum
 
-  calibrationValueIncludingWords.testCases(
-    "two1nine"        -> 29,
-    "eightwothree"    -> 83,
-    "abcone2threexyz" -> 13
-  )
   def calibrationValueIncludingWords(line: String) =
     val digits = Map(
       "one"   -> "1",
@@ -52,3 +39,20 @@ object day01:
       .toDigit
 
     s"$firstDigit$lastDigit".toInt
+
+  sumOfCalibrationValues.testCases(
+    file("example1") -> 142,
+    file("input")    -> 56042
+  )
+
+  sumOfCalibrationValuesIncludingWords.testCases(
+    file("example2") -> 281,
+    "123123\n112"    -> 25,
+    file("input")    -> 55358
+  )
+
+  calibrationValueIncludingWords.testCases(
+    "two1nine"        -> 29,
+    "eightwothree"    -> 83,
+    "abcone2threexyz" -> 13
+  )
