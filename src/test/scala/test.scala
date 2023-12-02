@@ -11,6 +11,8 @@ abstract class DayPart(val day: Int) extends munit.FunSuite:
         assertEquals(fn(input), expectedOutput)
       }
 
+  def file(name: String) = Source.fromResource(f"day$day%02d/$name").mkString
+
   extension [T, R](inline fn: T => R)
     inline def testCases(expectedResults: (T, R)*) =
       testFnWithNames(
@@ -25,7 +27,7 @@ abstract class DayPart(val day: Int) extends munit.FunSuite:
       testFnWithNames(
         fn,
         expectedResults.map((x) =>
-          val input = Source.fromResource(f"day$day%02d/${x._1}").mkString
+          val input = file(x._1)
           (s"${fn.exprString}(file(${x._1})) = ${x._2}", input, x._2)
         )*
       )
