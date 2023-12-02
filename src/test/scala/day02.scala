@@ -3,10 +3,10 @@ package day02
 class part1 extends test.DayPart(2):
   val totalCubes = Map(Color.Red -> 12, Color.Green -> 13, Color.Blue -> 14)
   given Map[Color, Int] = totalCubes
+  val exampleGames      = parse(file("example"))
+  val inputGames        = parse(file("input"))
 
-  val exampleGames = parse(file("example"))
-
-  sumOfIdsOfPossibleGames.testCasesFromFile("example" -> 8, "input" -> 0)
+  sumOfIdsOfPossibleGames.testCasesFromFile("example" -> 8, "input" -> 2439)
   def sumOfIdsOfPossibleGames(input: String) =
     val games = parse(input)
     games.games.values.filter(isPossible).map(_.id).sum
@@ -76,13 +76,28 @@ class part1 extends test.DayPart(2):
     exampleGames.byId(5) -> true
   )
   def isPossible(game: Game)(using totalCubes: Map[Color, Int]): Boolean =
-    maxCubesOfGame(game).forall((k, v) => v <= totalCubes.getOrElse(k, 0))
+    maxCubes(game.shownCubes).forall((k, v) => v <= totalCubes.getOrElse(k, 0))
 
-  maxCubesOfGame.testCases(
+  maxCubes.testCases(
     exampleGames
-      .byId(1) -> Map(Color.Red -> 4, Color.Green -> 2, Color.Blue -> 6)
+      .byId(1)
+      .shownCubes -> Map(Color.Red -> 4, Color.Green -> 2, Color.Blue -> 6)
   )
-  def maxCubesOfGame(game: Game) =
-    game.shownCubes.fold(
+  def maxCubes(cubeSet: Seq[Map[Color, Int]]) =
+    cubeSet.fold(
       Map(Color.Red -> 0, Color.Green -> 0, Color.Blue -> 0)
     )((map, el) => map.map((k, v) => (k, v.max(el.getOrElse(k, 0)))))
+
+  cubeSetPower.testCases(
+    exampleGames.byId(1).shownCubes -> 48,
+    exampleGames.byId(2).shownCubes -> 12,
+    exampleGames.byId(3).shownCubes -> 1560,
+    exampleGames.byId(4).shownCubes -> 630,
+    exampleGames.byId(5).shownCubes -> 36
+  )
+  def cubeSetPower(cubeSet: Seq[Map[Color, Int]]) =
+    maxCubes(cubeSet).foldLeft(1)((x, y) => x * y._2)
+
+  sumOfCubePowers.testCases(exampleGames -> 2286, inputGames -> 63711)
+  def sumOfCubePowers(games: Games) =
+    games.games.map((_, game) => cubeSetPower(game.shownCubes)).sum
