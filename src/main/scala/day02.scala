@@ -1,6 +1,5 @@
-package day02
-
-class day02 extends test.Day(2):
+object day02:
+  given Day      = 2
   val totalCubes = Map(Color.Red -> 12, Color.Green -> 13, Color.Blue -> 14)
   given Map[Color, Int] = totalCubes
   val exampleGames      = parse(file("example"))
