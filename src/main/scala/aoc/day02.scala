@@ -36,25 +36,14 @@ object day02:
       )
     )
   )
-  def parseGame(inputLine: String): Game =
-    val splits    = inputLine.split(": ", 2)
-    val gamePart  = splits.head
-    val remainder = splits.last
-    val id        = gamePart.split(" ").last.toInt
-    val shownCubes = remainder
-      .split("; ")
-      .map(
-        _.split(", ")
-          .map(colorCount => {
-            val splits = colorCount.split(" ")
-            val count  = splits.head.toInt
-            val color  = splits.last
-            (color, count)
-          })
-          .toMap
-      )
-      .toSeq
-    Game(id, shownCubes)
+  def parseGame(inputLine: String): Game = inputLine match
+    case s"Game $id: $remainder" =>
+      val cubeSets = remainder.split("; ")
+      val shownCubes = cubeSets.map { cubeSet =>
+        val colorCounts = cubeSet.split(", ")
+        colorCounts.map { case s"$count $color" => (color, count.toInt) }.toMap
+      }.toSeq
+      Game(id.toInt, shownCubes)
 
   isPossible.testCases(
     exampleGames.byId(1) -> true,
@@ -64,17 +53,20 @@ object day02:
     exampleGames.byId(5) -> true
   )
   def isPossible(game: Game)(using totalCubes: Map[String, Int]): Boolean =
-    maxCubes(game.shownCubes).forall((k, v) => v <= totalCubes.getOrElse(k, 0))
+    minimumRequiredCubes(game.shownCubes).forall { (k, v) =>
+      v <= totalCubes.getOrElse(k, 0)
+    }
 
-  maxCubes.testCases(
+  minimumRequiredCubes.testCases(
     exampleGames
       .byId(1)
       .shownCubes -> Map("red" -> 4, "green" -> 2, "blue" -> 6)
   )
-  def maxCubes(cubeSet: Seq[Map[String, Int]]) =
-    cubeSet.fold(
-      Map("red" -> 0, "green" -> 0, "blue" -> 0)
-    )((map, el) => map.map((k, v) => (k, v.max(el.getOrElse(k, 0)))))
+  def minimumRequiredCubes(cubeSet: Seq[Map[String, Int]]) =
+    val noCubes = Map("red" -> 0, "green" -> 0, "blue" -> 0)
+    cubeSet.fold(noCubes)((cubes, el) =>
+      cubes.map((k, v) => (k, v.max(el.getOrElse(k, 0))))
+    )
 
   cubeSetPower.testCases(
     exampleGames.byId(1).shownCubes -> 48,
@@ -84,7 +76,7 @@ object day02:
     exampleGames.byId(5).shownCubes -> 36
   )
   def cubeSetPower(cubeSet: Seq[Map[String, Int]]) =
-    maxCubes(cubeSet).foldLeft(1)((x, y) => x * y._2)
+    minimumRequiredCubes(cubeSet).foldLeft(1)((x, y) => x * y._2)
 
   sumOfCubePowers.testCases(exampleGames -> 2286, inputGames -> 63711)
   def sumOfCubePowers(games: Games) =
