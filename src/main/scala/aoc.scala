@@ -5,12 +5,6 @@ import scala.collection.mutable
 import utest.*
 import utest.framework.*
 
-class TestCases[T, R](val cases: (T, R)*)
-    extends scala.annotation.StaticAnnotation:
-  def transform(using Quotes)(
-      tree: x$1.reflect.Definition
-  ): List[x$1.reflect.Definition] = List(tree)
-
 @main def main =
   day01
   day02
