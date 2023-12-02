@@ -1,29 +1,9 @@
 import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
-import utest.framework.Tree
-import utest.framework.TestCallTree
 import scala.collection.mutable
-import utest.TestRunner
-import utest.Tests
-import utest.given
-import utest.test
-import utest.framework.Formatter
-import utest.framework.HTree
-import utest.framework.Result
-import utest.ufansi.Str
-import scala.annotation.StaticAnnotation
-import scala.language.experimental
-
-object TestFormatter extends utest.framework.Formatter:
-  override def formatColor: Boolean = true
-
-  override def formatWrapWidth: Int = 40
-
-  override def formatSummary(
-      topLevelName: String,
-      results: HTree[String, Result]
-  ): Option[Str] = Some("hello")
+import utest.*
+import utest.framework.*
 
 class TestCases[T, R](val cases: (T, R)*)
     extends scala.annotation.StaticAnnotation:
