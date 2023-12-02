@@ -1,3 +1,6 @@
+package days
+import main.{*, given}
+
 object day02:
   given Day      = 2
   val totalCubes = Map(Color.Red -> 12, Color.Green -> 13, Color.Blue -> 14)

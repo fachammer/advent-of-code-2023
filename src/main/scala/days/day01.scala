@@ -1,6 +1,8 @@
-given Day = 1
+package days
+import main.{*, given}
 
-object part1:
+object day01:
+  given Day = 1
   sumOfCalibrationValues.testCases(
     file("example1") -> 142,
     file("input")    -> 56042
@@ -16,21 +18,20 @@ object part1:
 
     s"${digits.head}${digits.last}".toInt
 
-object part2:
-  sumOfCalibrationValues.testCases(
+  sumOfCalibrationValuesIncludingWords.testCases(
     file("example2") -> 281,
     "123123\n112"    -> 25,
     file("input")    -> 55358
   )
-  def sumOfCalibrationValues(input: String) =
-    input.linesIterator.map(calibrationValue).sum
+  def sumOfCalibrationValuesIncludingWords(input: String) =
+    input.linesIterator.map(calibrationValueIncludingWords).sum
 
-  calibrationValue.testCases(
+  calibrationValueIncludingWords.testCases(
     "two1nine"        -> 29,
     "eightwothree"    -> 83,
     "abcone2threexyz" -> 13
   )
-  def calibrationValue(line: String) =
+  def calibrationValueIncludingWords(line: String) =
     val digits = Map(
       "one"   -> "1",
       "two"   -> "2",

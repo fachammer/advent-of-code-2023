@@ -1,24 +1,29 @@
+package main
+
 import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
-import utest._
 import utest.framework.Tree
 import utest.framework.TestCallTree
 import scala.collection.mutable
+import utest.TestRunner
+import utest.Tests
+import utest.given
 
 @main def main =
-  part1
-  part2
+  import days.*
+  day01
   day02
-  TestRunner.runAndPrint(utests, "")
-
-var tests = mutable.Map[Int, mutable.Map[String, () => Any]]()
+  TestRunner.runAndPrint(utests, "Advent of Code 2023")
 
 case class Day(val day: Int)
-
 given Conversion[Int, Day] with
-  def apply(x: Int): Day = Day(x)
+  def apply(x: Int) = Day(x)
 
+def file(name: String)(using day: Day) =
+  Source.fromResource(f"day${day.day}%02d/$name").mkString
+
+var tests = mutable.Map[Int, mutable.Map[String, () => Any]]()
 def utests =
   val sortedTests =
     tests.toSeq.sortBy(_._1).map(x => (x._1, x._2.toSeq.sortBy(_._1)))
@@ -33,7 +38,7 @@ def utests =
               .sortBy(_._1)
               .map(y =>
                 Tree(
-                  y._1.replace("\n", "\\n")
+                  y._1.replace("\n", "\\n").substring(0, 50.min(y._1.length()))
                 )
               )*
           )
@@ -51,9 +56,6 @@ def utests =
     )
   )
   Tests(nameTree, callTree)
-
-def file(name: String)(using day: Day) =
-  Source.fromResource(f"day${day.day}%02d/$name").mkString
 
 extension [T, R](fn: T => R)(using day: Day)
   def testCasesWithNames(expectedResults: (String, (T, R))*) =
