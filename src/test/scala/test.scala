@@ -4,7 +4,7 @@ import scala.io.Source
 import scala.quoted.Expr
 import scala.quoted.Quotes
 
-abstract class DayPart(val day: Int) extends munit.FunSuite:
+abstract class Day(val day: Int) extends munit.FunSuite:
   def testFnWithNames[T, R](fn: T => R, expectedResults: (String, T, R)*) =
     for (testName, input, expectedOutput) <- expectedResults do
       test(testName) {
