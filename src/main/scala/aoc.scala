@@ -72,15 +72,6 @@ extension [T, R](inline fn: T => R)(using Day)
       )*
     )
 
-extension [R](inline fn: String => R)(using Day)
-  inline def testCasesFromFile(expectedResults: (String, R)*): Tests =
-    fn.testCasesWithNames(
-      expectedResults.map((x) =>
-        val input = file(x._1)
-        (s"${fn.exprString}(file(${x._1})) = ${x._2}", (input, x._2))
-      )*
-    )
-
 def exprStringCode[T, R](f: Expr[T => R])(using Quotes): Expr[String] =
   Expr(f.show.split(" ").last.split("\\(").head.split("\\.").last)
 

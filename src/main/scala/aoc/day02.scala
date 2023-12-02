@@ -5,7 +5,7 @@ object day02:
   val exampleGames      = parse(file("example"))
   val inputGames        = parse(file("input"))
 
-  sumOfIdsOfPossibleGames.testCasesFromFile("example" -> 8, "input" -> 2439)
+  sumOfIdsOfPossibleGames.testCases(file("example") -> 8, file("input") -> 2439)
   def sumOfIdsOfPossibleGames(input: String) =
     val games = parse(input)
     games.games.values.filter(isPossible).map(_.id).sum
