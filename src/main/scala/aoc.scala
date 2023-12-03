@@ -8,6 +8,7 @@ import utest.framework.*
 @main def main =
   day01
   day02
+  day03
   val results = TestRunner.runAndPrint(
     utests(tests.map(x => (x._1, x._2.toMap)).toMap),
     "Advent of Code 2023"
