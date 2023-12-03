@@ -3,100 +3,82 @@ object day03:
 
   sumOfPartNumbers.testCases(file("example") -> 4361, file("input") -> 532428)
   def sumOfPartNumbers(input: String): Int =
-    given schematic: Schematic = parseSchematic(input)
-    val partNumbers = numberPositions.filter(x => isPartNumber(x._1, x._2))
-    partNumbers.map(_._1).sum
+    given Schematic = parseSchematic(input)
+    partNumbers.map(_.number).sum
 
-  case class Schematic(val schematic: Seq[String])
+  type Schematic = Seq[String]
+  def parseSchematic(input: String): Schematic     = input.linesIterator.toArray
+  def getRow(using schematic: Schematic)(row: Int) = schematic(row)
+  def get(using schematic: Schematic)(col: Int, row: Int) = schematic(row)(col)
 
-  def parseSchematic(input: String): Schematic =
-    Schematic(input.linesIterator.toArray)
+  case class SchematicNumber(val number: Int, val row: Int, val startCol: Int):
+    def width = number.toString.length
+
+    def adjacents(using Schematic): Seq[(Int, Int)] =
+      val upperBorder = for col <- -1 to width yield (col, -1)
+      val lowerBorder = for col <- -1 to width yield (col, 1)
+      val border      = upperBorder ++ lowerBorder :+ (-1, 0) :+ (width, 0)
+      border.offset(startCol, row).filter(isInBounds.tupled)
+
+    def asPartNumber(using Schematic) =
+      if adjacents.map(get.tupled).exists(isSymbol) then Some(this) else None
 
   extension (s: String)
-    def unsignedIntsWithIndex =
-      "[0-9]+".r.findAllMatchIn(s).map(x => (x.matched.toInt, (x.start, x.end)))
+    def unsignedIntsWithRange = "[0-9]+".r
+      .findAllMatchIn(s)
+      .map(x => (x.matched.toInt, x.start until x.end))
 
-  def numberPositions(using schematic: Schematic): Seq[(Int, (Int, Int))] =
-    val Schematic(lines) = schematic
-    val result = for
-      (line, row)        <- lines.zipWithIndex
-      (number, (col, _)) <- line.unsignedIntsWithIndex
-    yield (number, (col, row))
+    def unsignedIntAtPositionWithRange(i: Int): Option[(Int, Range)] =
+      unsignedIntsWithRange.find((_, range) => range.contains(i))
 
-    result
+  def partNumbers(using schematic: Schematic) = for
+    (line, row)     <- schematic.zipWithIndex
+    (number, range) <- line.unsignedIntsWithRange
+    partNumber      <- partNumberAt(range.start, row)
+  yield partNumber
 
-  def isPartNumber(using schematic: Schematic)(
-      number: Int,
-      position: (Int, Int)
-  ): Boolean =
-    val adjacents = numberAdjacentPositions(number, position)
-    adjacents.map((col, row) => schematic.schematic(row)(col)).exists(isSymbol)
-
-  def inBounds(using schematic: Schematic)(position: (Int, Int)) =
-    val Schematic(lines) = schematic
-    val width            = lines(0).length
-    val height           = lines.length
-    val (col, row)       = position
+  def isInBounds(using schematic: Schematic)(col: Int, row: Int) =
+    val width  = getRow(0).length
+    val height = schematic.length
     (0 until width).contains(col) && (0 until height).contains(row)
 
-  def numberAdjacentPositions(using schematic: Schematic)(
-      number: Int,
-      position: (Int, Int)
-  ): Seq[(Int, Int)] =
-    val numberWidth = number.toString.length
-    val leftBorder  = Seq((-1, -1), (-1, 0), (-1, 1))
-    val rightBorder = Seq((numberWidth, -1), (numberWidth, 0), (numberWidth, 1))
-    val upperBorder = (0 until numberWidth).map((_, -1))
-    val lowerBorder = (0 until numberWidth).map((_, 1))
-    val border      = leftBorder ++ rightBorder ++ upperBorder ++ lowerBorder
-    val (col, row)  = position
-    val result      = border.map(p => (col + p._1, row + p._2)).filter(inBounds)
-    result
-
-  def isSymbol(char: Char): Boolean = char match
+  def isSymbol(char: Char) = char match
     case '.'            => false
     case x if x.isDigit => false
     case _              => true
 
-  sumOfGearRatios.testCases(
-    file("example") -> 467835,
-    file("input")   -> 84051670
-  )
-  def sumOfGearRatios(input: String): Int =
-    given schematic: Schematic = parseSchematic(input)
-    val partNumbers = numberPositions.filter(x => isPartNumber(x._1, x._2))
-    asterisks.flatMap(gearRatio).sum
+  gearRatiosSum.testCases(file("example") -> 467835, file("input") -> 84051670)
+  def gearRatiosSum(input: String): Int =
+    given Schematic = parseSchematic(input)
+    gears.map(_.ratio).sum
 
-  def asterisks(using schematic: Schematic): Seq[(Int, Int)] =
-    val Schematic(lines) = schematic
-    for
-      (line, row) <- lines.zipWithIndex
-      (char, col) <- line.zipWithIndex
-      if char == '*'
-    yield (col, row)
+  case class Gear(val first: SchematicNumber, val second: SchematicNumber):
+    def ratio = first.number * second.number
 
-  def gearRatio(using schematic: Schematic)(position: (Int, Int)): Option[Int] =
-    val border =
-      Seq((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
-    val adjacentPositions =
-      border.map(p => (position._1 + p._1, position._2 + p._2)).filter(inBounds)
-    val adjacentPartNumbers = adjacentPositions
-      .flatMap(numberAtPosition)
-      .filter(x => isPartNumber(x._1, (x._2._2._1, x._2._1)))
+  def gears(using schematic: Schematic): Seq[Gear] = for
+    (line, row) <- schematic.zipWithIndex
+    (char, col) <- line.zipWithIndex
+    gear        <- gearAt(col, row)
+  yield gear
+
+  def gearAt(using Schematic)(col: Int, row: Int): Option[Gear] =
+    if get(col, row) != '*' then return None
+    val adjacentPartNumbers = neighborhood8(col, row)
+      .filter(isInBounds.tupled)
+      .flatMap(partNumberAt.tupled)
       .distinct
     adjacentPartNumbers match
-      case Seq((first, _), (second, _)) => Some(first * second)
-      case _                            => None
+      case Seq(first, second) => Some(Gear(first, second))
+      case _                  => None
 
-  def numberAtPosition(using schematic: Schematic)(
-      position: (Int, Int)
-  ): Option[(Int, (Int, (Int, Int)))] =
-    val Schematic(lines) = schematic
-    val (col, row)       = position
-    val char             = lines(row)(col)
-    if (char.isDigit)
-      val (number, (start, end)) = lines(row).unsignedIntsWithIndex
-        .find((_, r) => (r._1 until r._2).contains(col))
-        .get
-      Some((number, (row, (start, end))))
-    else None
+  extension (seq: Seq[(Int, Int)])
+    def offset(col: Int, row: Int) = seq.map((x, y) => (x + col, y + row))
+
+  def neighborhood8(using Schematic)(col: Int, row: Int): Seq[(Int, Int)] =
+    for i <- -1 to 1; j <- -1 to 1 if (i, j) != (0, 0)
+    yield (col + i, row + j)
+
+  def partNumberAt(using Schematic)(col: Int, row: Int) = for
+    (number, range) <- getRow(row).unsignedIntAtPositionWithRange(col)
+    partNumber      <- SchematicNumber(number, row, range.start).asPartNumber
+  yield partNumber
