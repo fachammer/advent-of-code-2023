@@ -48,7 +48,7 @@ extension (seq: Seq[(Int, Int)])
 case class Gear(val first: SchematicNumber, val second: SchematicNumber):
   def ratio = first.number * second.number
 
-def gearRatiosSum(input: String): Int =
+def gearRatioSum(input: String): Int =
   given Schematic = input.linesIterator.toArray
   gears.map(_.ratio).sum
 
