@@ -4,16 +4,15 @@ package day02
 given totalCubes: Map[String, Int] =
   Map("red" -> 12, "green" -> 13, "blue" -> 14)
 
+case class Games(val games: Map[Int, Game]):
+  def byId(id: Int) = games.get(id).get
+case class Game(val id: Int, val shownCubes: Map[String, Int]*)
+
 def sumOfIdsOfPossibleGames(input: String) =
   parseGames(input).games.values.filter(isPossible).map(_.id).sum
 
-case class Games(val games: Map[Int, Game]):
-  def byId(id: Int) = games.get(id).get
-
 def parseGames(s: String): Games =
   Games(s.linesIterator.map(parseGame).map(g => (g.id, g)).toMap)
-
-case class Game(val id: Int, val shownCubes: Map[String, Int]*)
 
 def parseGame(s: String): Game = s match
   case s"Game $id: $remainder" =>
