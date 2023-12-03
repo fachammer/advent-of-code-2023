@@ -27,15 +27,13 @@ abstract class DayTest(val day: Int) extends AnyFreeSpec {
 
   def parts: Seq[Part[Any]]
 
-  s"day $day" - {
-    for (Part(fn, testCases), i) <- parts.zipWithIndex do {
-      s"part ${i + 1}" - {
-        fn.testCases(
-          testCases.map((fileName: String, output: Any) =>
-            (fileName, (file(fileName), output))
-          )*
-        )
-      }
+  for (Part(fn, testCases), i) <- parts.zipWithIndex do {
+    s"part ${i + 1}" - {
+      fn.testCases(
+        testCases.map((fileName: String, output: Any) =>
+          (fileName, (file(fileName), output))
+        )*
+      )
     }
   }
 }

@@ -2,7 +2,7 @@ package day01
 
 import test.*
 
-class Test extends DayTest(1) {
+class Day01 extends DayTest(1) {
   def parts = Seq(
     Part(sumOfCalibrationValues, "example1" -> 142, "input" -> 56042),
     Part(
