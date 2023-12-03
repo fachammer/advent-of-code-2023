@@ -14,7 +14,7 @@ case class SchematicNumber(val number: Int, val row: Int, val startCol: Int):
     val border      = upperBorder ++ lowerBorder :+ (-1, 0) :+ (range.length, 0)
     border.offset(startCol, row).withinBounds.toSet
 
-def sumOfPartNumbers(input: String): Int =
+def partNumberSum(input: String): Int =
   given Schematic = input.linesIterator.toArray
   partNumbers.map(_.number).sum
 
