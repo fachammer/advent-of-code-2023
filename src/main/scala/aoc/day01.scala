@@ -1,5 +1,6 @@
 package day01
 
+// part 1
 def sumOfCalibrationValues(input: String) =
   input.linesIterator.map(calibrationValue).sum
 
@@ -11,6 +12,7 @@ def calibrationValue(line: String): Int =
 
   s"${digits.head}${digits.last}".toInt
 
+// part 2
 def sumOfCalibrationValuesIncludingWords(input: String) =
   input.linesIterator.map(calibrationValueIncludingWords).sum
 

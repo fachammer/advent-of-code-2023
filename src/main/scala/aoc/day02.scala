@@ -1,5 +1,6 @@
 package day02
 
+// part 1
 given totalCubes: Map[String, Int] =
   Map("red" -> 12, "green" -> 13, "blue" -> 14)
 
@@ -30,6 +31,7 @@ def isPossible(game: Game)(using totalCubes: Map[String, Int]): Boolean =
     v <= totalCubes.getOrElse(k, 0)
   }
 
+// part 2
 def minimumRequiredCubes(cubeSet: Seq[Map[String, Int]]) =
   val noCubes = Map("red" -> 0, "green" -> 0, "blue" -> 0)
   cubeSet.fold(noCubes)((cubes, el) =>
