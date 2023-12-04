@@ -1,49 +1,31 @@
 package day04
 
 // part 1
-def points(input: String): Int =
-  input.linesIterator
-    .map(parseCard)
-    .map((_, winning, own) => cardPoints(winning, own))
-    .sum
-
-def parseCard(input: String): (Int, Set[Int], Set[Int]) =
-  input match
-    case s"Card $card: $winningNumbers | $ownNumbers" =>
-      (
-        card.strip.toInt,
-        winningNumbers
-          .split(" ")
-          .filterNot(_.isEmpty)
-          .map(_.strip)
-          .map(_.toInt)
-          .toSet,
-        ownNumbers
-          .split(" ")
-          .filterNot(_.isBlank)
-          .map(_.strip)
-          .map(_.toInt)
-          .toSet
-      )
-
-def cardPoints(winningNumbers: Set[Int], ourNumbers: Set[Int]): Int =
-  winningNumbers.intersect(ourNumbers).size match
+case class Card(val number: Int, winning: Set[Int], our: Set[Int]):
+  def matches: Int = winning.intersect(our).size
+  def points: Int = matches match
     case 0 => 0
     case n => scala.math.pow(2, n - 1).toInt
 
-// part2
-def numberOfScratchCards(input: String): Int =
-  val numberOfCards = input.linesIterator.length
-  var cardAmounts =
-    scala.collection.mutable.Map[Int, Int]((1 to numberOfCards).map((_, 1))*)
+def points(input: String) = input.linesIterator.map(parseCard).map(_.points).sum
 
-  for line <- input.linesIterator do
-    val (card, winningNumbers, ownNumbers) = parseCard(line)
-    val intersection    = winningNumbers.intersect(ownNumbers)
-    val numberOfMatches = intersection.size
-    for
-      i <- (card + 1) to (card + numberOfMatches)
-      if i <= numberOfCards
-    do cardAmounts(i) += cardAmounts(card)
+def parseCard(input: String): Card =
+  val pattern = "Card\\s+(\\d+): (.*) \\| (.*)".r
+  input match
+    case pattern(cardNumber, winning, our) =>
+      def parseNumbers(n: String) = n.strip.split("\\s+").map(_.toInt).toSet
+      Card(cardNumber.toInt, parseNumbers(winning), parseNumbers(our))
+
+// part 2
+def scratchCards(input: String): Int =
+  val cards              = input.linesIterator.map(parseCard).toSeq
+  val initialCardAmounts = for Card(n, _, _) <- cards yield (n, 1)
+  val cardAmounts = scala.collection.mutable.Map[Int, Int](initialCardAmounts*)
+
+  for
+    card @ Card(number, _, _) <- cards
+    nextCard                  <- number + 1 to number + card.matches
+    if cardAmounts.contains(nextCard)
+  do cardAmounts(nextCard) += cardAmounts(number)
 
   cardAmounts.values.sum
