@@ -9,6 +9,8 @@ lazy val root = project
       Tests.Argument("-W", "10", "10")
     ),
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.2.17" % "test"
+      "com.lihaoyi"   %% "pprint"     % "0.7.0",
+      "com.lihaoyi"   %% "sourcecode" % "0.3.1",
+      "org.scalatest" %% "scalatest"  % "3.2.17" % "test"
     )
   )
