@@ -1,8 +1,5 @@
-package day01
-
-import test.*
-
 class Day01 extends DayTest(1) {
+  import day01.*
   def parts = Seq(
     Part(sumOfCalibrationValues, "example1" -> 142, "input" -> 56042),
     Part(

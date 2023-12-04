@@ -1,5 +1,3 @@
-package test
-
 import scala.io.Source
 import org.scalatest.freespec.AnyFreeSpec
 
