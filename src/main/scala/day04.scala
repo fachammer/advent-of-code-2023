@@ -10,10 +10,10 @@ case class Card(val number: Int, winning: Set[Int], our: Set[Int]):
 def points(input: String) = input.linesIterator.map(parseCard).map(_.points).sum
 
 def parseCard(input: String): Card =
-  val pattern = raw"Card\s+(\d+): +(.*) \| +(.*)".r
+  val pattern = raw"Card +(\d+): +(.*) \| +(.*)".r
   input match
     case pattern(cardNumber, winning, our) =>
-      def parseNumbers(n: String) = n.split(raw"\s+").map(_.toInt).toSet
+      def parseNumbers(n: String) = n.split(" +").map(_.toInt).toSet
       Card(cardNumber.toInt, parseNumbers(winning), parseNumbers(our))
 
 // part 2
