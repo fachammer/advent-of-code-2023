@@ -1,6 +1,7 @@
 package day06
 
-import debug.*
+import java.math.MathContext
+import java.math.RoundingMode
 
 // part 1
 def productOfNumberOfWaysToBeatRecord(input: String) =
@@ -11,7 +12,7 @@ def productOfNumberOfWaysToBeatRecord(input: String) =
     timesString.split(" +").map(_.strip).filterNot(_.isEmpty).map(_.toInt)
   val distances =
     distanceString.split(" +").map(_.strip).filterNot(_.isEmpty).map(_.toInt)
-  val races = times.zip(distances).d
+  val races = times.zip(distances)
 
   // let t_r be the duration of the race
   // let t_s be the duration of holding the button
@@ -35,20 +36,52 @@ def productOfNumberOfWaysToBeatRecord(input: String) =
 
   races
     .map(roots.tupled)
-    .d
-    .map((left, right) => (left.nextInt, right.previousInt))
-    .d
+    .map((left, right) => (left.nextLong, right.previousLong))
     .map((left, right) => {
       assert(right >= left)
       right - left + 1
     })
-    .d
     .product
 
-extension (number: Double)
-  def nextInt =
-    if number.isValidInt then number.toInt + 1
-    else number.ceil.toInt
-  def previousInt =
-    if number.isValidInt then number.toInt - 1
-    else number.floor.toInt
+// part 2
+def numberOfWaysToBeatRecord(input: String) =
+  val List(s"Time: $timesString", s"Distance: $distanceString") =
+    input.linesIterator.toSeq: @unchecked
+
+  val time     = timesString.replaceAll(" ", "").toLong
+  val distance = distanceString.replaceAll(" ", "").toLong
+
+  def bigDecimalRoots(
+      raceDuration: Long,
+      recordDistance: Long
+  ): (BigDecimal, BigDecimal) =
+    (
+      BigDecimal(-1.0 / 2) * (BigDecimal(-raceDuration) + BigDecimal(
+        raceDuration * raceDuration - 4 * recordDistance
+      ).bigDecimal.sqrt(MathContext.DECIMAL128)),
+      BigDecimal(-1.0 / 2) * (BigDecimal(-raceDuration) - BigDecimal(
+        raceDuration * raceDuration - 4 * recordDistance
+      ).bigDecimal.sqrt(MathContext.DECIMAL128))
+    )
+
+  val (left, right) = bigDecimalRoots(time, distance)
+
+  right.previousLong - left.nextLong + 1
+
+extension (number: BigDecimal)
+  def nextLong =
+    if number.isValidLong then number.longValue + 1
+    else
+      val digitsBeforeDecimalPoint =
+        number.bigDecimal.toString.split(raw"\.").head.length
+      number
+        .round(MathContext(digitsBeforeDecimalPoint, RoundingMode.CEILING))
+        .longValue
+  def previousLong =
+    if number.isValidLong then number.longValue - 1
+    else
+      val digitsBeforeDecimalPoint =
+        number.bigDecimal.toString.split(raw"\.").head.length
+      number
+        .round(MathContext(digitsBeforeDecimalPoint, RoundingMode.FLOOR))
+        .longValue
