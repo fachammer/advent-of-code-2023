@@ -16,10 +16,9 @@ def productOfNumberOfWaysToBeatRecord(input: String) =
   races.map(numberOfWaysToBeatRecord.tupled).product
 
 def numberOfWaysToBeatRecord(raceDuration: Long, recordDistance: Long): Long =
-  val discriminant     = raceDuration * raceDuration - 4 * recordDistance
-  val discriminantRoot = scala.math.sqrt(discriminant)
-  val leftRoot         = 0.5 * (raceDuration - discriminantRoot)
-  val rightRoot        = 0.5 * (raceDuration + discriminantRoot)
+  val discriminant = raceDuration * raceDuration - 4 * recordDistance
+  val leftRoot     = 0.5 * (raceDuration - scala.math.sqrt(discriminant))
+  val rightRoot    = 0.5 * (raceDuration + scala.math.sqrt(discriminant))
   rightRoot.previousLong - leftRoot.nextLong + 1
 
 // part 2
@@ -33,9 +32,5 @@ def numberOfWaysToBeatRecord(input: String): Long =
   numberOfWaysToBeatRecord(raceDuration, recordDistance)
 
 extension (number: Double)
-  def nextLong =
-    if number.isValidInt then number.longValue + 1
-    else number.ceil.toLong
-  def previousLong =
-    if number.isValidInt then number.longValue - 1
-    else number.floor.toLong
+  def nextLong     = number.floor.toLong + 1
+  def previousLong = number.ceil.toLong - 1
