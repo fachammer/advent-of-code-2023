@@ -1,7 +1,5 @@
 package day07
 
-import scala.math.Ordered.orderingToOrdered
-
 // part 1
 enum HandType:
   case FiveOfAKind
@@ -12,43 +10,33 @@ enum HandType:
   case OnePair
   case HighCard
 
-case class Hand(values: Seq[Int]):
-  def handType: HandType =
-    val groups = values.groupBy(x => x)
-    if groups.size == 1 then HandType.FiveOfAKind
-    else if groups.size == 2 then
-      if groups.values.map(_.size).toSeq.sorted.reverse == Seq(4, 1) then
-        HandType.FourOfAKind
-      else HandType.FullHouse
-    else if groups.size == 3 then
-      if groups.values.map(_.size).toSeq.sorted.reverse == Seq(3, 1, 1) then
-        HandType.ThreeOfAKind
-      else HandType.TwoPair
-    else if groups.size == 4 then HandType.OnePair
-    else HandType.HighCard
+case class Hand(hand: String)
+case class Rules(val cardValue: Char => Int, handType: Hand => HandType)
 
-class HandOrdering(using handTypeOrdering: Ordering[HandType])
-    extends Ordering[Hand]:
-  def compare(left: Hand, right: Hand): Int =
-    val comparison = left.handType.compare(right.handType)
-    if comparison != 0 then comparison
-    else right.values.compare(left.values)
+val noJokerRules = Rules(cardValue, handTypeWithoutJoker)
+def totalWinningsNoJoker(input: String) =
+  totalWinnings(noJokerRules, input)
 
-object HandTypeOrdering extends Ordering[HandType]:
-  override def compare(left: HandType, right: HandType): Int =
-    left.ordinal.compare(right.ordinal)
+def totalWinnings(rules: Rules, input: String) =
+  import scala.math.Ordered.orderingToOrdered
+  val handTypeOrdering: Ordering[HandType] = Ordering.by(t => t.ordinal)
+  given Ordering[(HandType, Iterable[Int])] =
+    Ordering.Tuple2(handTypeOrdering.reverse, Ordering.Iterable[Int])
+  given Ordering[Hand] = Ordering.by((hand: Hand) =>
+    (rules.handType(hand), hand.hand.map(rules.cardValue))
+  )
 
-def totalWinnings(input: String) =
-  val bids = input.linesIterator
+  parseHandBids(input).sorted
+    .map(_._2)
+    .zipWithIndex
+    .map { (bid, index) => bid * (index + 1) }
+    .sum
+
+def parseHandBids(input: String): Seq[(Hand, Int)] =
+  input.linesIterator
     .map(_.span(x => !x.isSpaceChar))
-    .map((hand, bid) => (Hand(hand.map(cardValue)), bid.strip.toInt))
+    .map((hand, bid) => (Hand(hand), bid.strip.toInt))
     .toSeq
-
-  given Ordering[HandType] = HandTypeOrdering
-  given Ordering[Hand]     = HandOrdering()
-  bids.sorted.reverse.zipWithIndex.map { case ((_, bid), index) =>
-    bid * (index + 1)
-  }.sum
 
 def cardValue(char: Char): Int = char match
   case 'A'            => 14
@@ -58,52 +46,32 @@ def cardValue(char: Char): Int = char match
   case 'T'            => 10
   case x if x.isDigit => x.asDigit
 
+def handTypeWithoutJoker(hand: Hand): HandType =
+  val handType = sizeType(hand.hand.groupBy(x => x))
+  handType match
+    case Seq(5)             => HandType.FiveOfAKind
+    case Seq(1, 4)          => HandType.FourOfAKind
+    case Seq(2, 3)          => HandType.FullHouse
+    case Seq(1, 1, 3)       => HandType.ThreeOfAKind
+    case Seq(1, 2, 2)       => HandType.TwoPair
+    case Seq(1, 1, 1, 2)    => HandType.OnePair
+    case Seq(1, 1, 1, 1, 1) => HandType.HighCard
+
+def sizeType(map: Map[Char, String]) = map.values.map(_.size).toSeq.sorted
+
 // part 2
-case class HandWithJoker(hand: String):
-  def handType: HandType =
-    val groupsTypeWithoutJoker = hand
-      .groupBy(x => x)
-      .filterKeys(_ != 'J')
-      .values
-      .map(_.size)
-      .toSeq
-      .sorted
-      .reverse
+val jokerRules = Rules(cardValueWithJoker, handTypeWithJoker)
+def totalWinningsWithJoker(input: String) = totalWinnings(jokerRules, input)
 
-    val numberOfJokers = hand.groupBy(x => x).get('J').map(_.size).getOrElse(0)
-    import HandType.*
-    (groupsTypeWithoutJoker, numberOfJokers) match
-      case (_, 5) | (_, 4) | (Seq(2), 3) | (Seq(3), 2) | (Seq(4), 1) =>
-        FiveOfAKind
-      case (Seq(1, 1), 3) | (Seq(2, 1), 2) | (Seq(3, 1), 1) => FourOfAKind
-      case (Seq(2, 2), 1)                                   => FullHouse
-      case (Seq(1, 1, 1), 2) | (Seq(2, 1, 1), 1)            => ThreeOfAKind
-      case (Seq(1, 1, 1, 1), 1)                             => OnePair
-      case (_, 0) => Hand(hand.map(cardValue)).handType
+def cardValueWithJoker(char: Char) = if char == 'J' then 1 else cardValue(char)
 
-class HandWithJokerOrdering(using handTypeOrdering: Ordering[HandType])
-    extends Ordering[HandWithJoker]:
-  def compare(left: HandWithJoker, right: HandWithJoker): Int =
-    val comparison = left.handType.compare(right.handType)
-    def cardValueWithJoker(char: Char) =
-      if char == 'J' then 1 else cardValue(char)
-    if comparison != 0 then comparison
-    else
-      right.hand
-        .map(cardValueWithJoker)
-        .compare(left.hand.map(cardValueWithJoker))
+def handTypeWithJoker(hand: Hand): HandType =
+  val handType = sizeType(hand.hand.groupBy(x => x).filterKeys(_ != 'J').toMap)
 
-def totalWinningsWithJoker(input: String) =
-  val bids = input.linesIterator
-    .map(_.span(x => !x.isSpaceChar))
-    .map((hand, bid) => (HandWithJoker(hand), bid.strip.toInt))
-    .toSeq
-
-  given Ordering[HandType]      = HandTypeOrdering
-  given Ordering[HandWithJoker] = HandWithJokerOrdering()
-  bids.sorted.reverse.zipWithIndex
-    .map { case ((hand, bid), index) =>
-      (hand, hand.handType, index + 1, bid, bid * (index + 1))
-    }
-    .map((_, _, _, _, winning) => winning)
-    .sum
+  handType match
+    case Seq() | Seq(_)  => HandType.FiveOfAKind
+    case Seq(1, _)       => HandType.FourOfAKind
+    case Seq(2, 2)       => HandType.FullHouse
+    case Seq(1, 1, _)    => HandType.ThreeOfAKind
+    case Seq(1, 1, 1, 1) => HandType.OnePair
+    case _               => handTypeWithoutJoker(hand)
