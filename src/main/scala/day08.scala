@@ -16,7 +16,10 @@ def requiredSteps(input: String) =
 // part 2
 def requiredStepsAsGhost(input: String) =
   val (steps, nodes) = parseInput(input)
-  given DesertMap    = nodes
+  requiredStepsAsGhostFromParsed(steps, nodes)
+
+def requiredStepsAsGhostFromParsed(steps: String, nodes: DesertMap) =
+  given DesertMap = nodes
 
   case class FindResult(val end: String, val pathLength: Long, val offset: Int)
   def findEndNode(startNode: String, stepOffset: Int) =

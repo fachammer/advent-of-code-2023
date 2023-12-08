@@ -1,5 +1,8 @@
-class Day06 extends DayTest(6):
-  import day06.*
+package day06.test
+import test.{*, given}
+import day06.{*, given}
+given Day = 6
+class Test extends DayTest:
   def parts = Seq(
     Part(
       productOfNumberOfWaysToBeatRecord,
