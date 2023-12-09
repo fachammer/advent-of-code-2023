@@ -18,11 +18,12 @@ def partNumberSum(input: String): Int =
   given Schematic = input.linesIterator.toSeq
   partNumbers.map(_.number).sum
 
-def partNumbers(using schematic: Schematic) = for
-  (line, row)     <- schematic.zipWithIndex
-  (number, range) <- line.unsignedIntsWithRange
-  partNumber      <- SchematicNumber(number, row, range.start).asPartNumber
-yield partNumber
+def partNumbers(using schematic: Schematic) =
+  for
+    (line, row)     <- schematic.zipWithIndex
+    (number, range) <- line.unsignedIntsWithRange
+    partNumber      <- SchematicNumber(number, row, range.start).asPartNumber
+  yield partNumber
 
 def lineAt(using schematic: Schematic)(row: Int) = schematic(row)
 def charAt(using Schematic)(col: Int, row: Int)  = lineAt(row)(col)
@@ -34,14 +35,16 @@ def isInBounds(using schematic: Schematic)(col: Int, row: Int) =
 def isSymbol(char: Char) = char != '.' && !char.isDigit
 
 extension (s: String)
-  def unsignedIntsWithRange = for numberMatch <- "[0-9]+".r.findAllMatchIn(s)
-  yield (numberMatch.matched.toInt, numberMatch.start until numberMatch.end)
+  def unsignedIntsWithRange =
+    for numberMatch <- "[0-9]+".r.findAllMatchIn(s)
+    yield (numberMatch.matched.toInt, numberMatch.start until numberMatch.end)
 
   def unsignedIntAtIndexWithRange(i: Int): Option[(Int, Range)] =
     unsignedIntsWithRange.find((_, range) => range.contains(i))
 
 extension (seq: Seq[(Int, Int)])
-  def offset(col: Int, row: Int)    = for (x, y) <- seq yield (x + col, y + row)
+  def offset(col: Int, row: Int) =
+    for (x, y) <- seq yield (x + col, y + row)
   def withinBounds(using Schematic) = seq.filter(isInBounds.tupled)
 
 // part 2
@@ -52,11 +55,12 @@ def gearRatioSum(input: String): Int =
   given Schematic = input.linesIterator.toSeq
   gears.map(_.ratio).sum
 
-def gears(using schematic: Schematic): Seq[Gear] = for
-  (line, row) <- schematic.zipWithIndex
-  (char, col) <- line.zipWithIndex
-  gear        <- gearAt(col, row)
-yield gear
+def gears(using schematic: Schematic): Seq[Gear] =
+  for
+    (line, row) <- schematic.zipWithIndex
+    (char, col) <- line.zipWithIndex
+    gear        <- gearAt(col, row)
+  yield gear
 
 def gearAt(using Schematic)(col: Int, row: Int): Option[Gear] =
   if charAt(col, row) != '*' then return None
@@ -67,7 +71,8 @@ def adjacentPartNumbersAt(using Schematic)(col: Int, row: Int) =
   val neighborhood8 = for i <- -1 to 1; j <- -1 to 1 yield (col + i, row + j)
   neighborhood8.withinBounds.flatMap(partNumberAt.tupled).distinct
 
-def partNumberAt(using Schematic)(col: Int, row: Int) = for
-  (number, range) <- lineAt(row).unsignedIntAtIndexWithRange(col)
-  partNumber      <- SchematicNumber(number, row, range.start).asPartNumber
-yield partNumber
+def partNumberAt(using Schematic)(col: Int, row: Int) =
+  for
+    (number, range) <- lineAt(row).unsignedIntAtIndexWithRange(col)
+    partNumber      <- SchematicNumber(number, row, range.start).asPartNumber
+  yield partNumber

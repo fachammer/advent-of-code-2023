@@ -5,7 +5,7 @@ case class Almanac(val seeds: Seq[Long], val maps: Seq[AlmanacMap])
 case class IntervalMap(
     val domainStart: Long,
     val rangeStart: Long,
-    val length: Long
+    val length: Long,
 ):
   def domain              = Interval(domainStart, length)
   def range               = Interval(rangeStart, length)
@@ -13,8 +13,7 @@ case class IntervalMap(
   def inverse             = IntervalMap(rangeStart, domainStart, length)
   def restrictTo(interval: Interval): IntervalMap =
     val restricted = domain.intersect(interval)
-    this(restricted.start)
-      .map(IntervalMap(restricted, _))
+    this(restricted.start).map(IntervalMap(restricted, _))
       .getOrElse(IntervalMap.empty)
 
 object IntervalMap:
@@ -24,10 +23,8 @@ object IntervalMap:
   def identity(start: Long, length: Long) = IntervalMap(start, start, length)
 
 case class AlmanacMap(val mappings: Seq[IntervalMap]):
-  def apply(number: Long) = mappings
-    .flatMap(f => f(number))
-    .headOption
-    .getOrElse(number)
+  def apply(number: Long) =
+    mappings.flatMap(f => f(number)).headOption.getOrElse(number)
 
   def minOutput: Long = mappings.map(m => m.range.start).min
 
@@ -35,11 +32,12 @@ case class AlmanacMap(val mappings: Seq[IntervalMap]):
     AlmanacMap(mappings.map(_.restrictTo(interval)).filterNot(_.domain.isEmpty))
 
   def after(map: AlmanacMap): AlmanacMap =
-    val newMappings = for
-      map         <- map.mappings
-      restricted  <- restrictTo(map.range).mappings
-      domainStart <- map.inverse(restricted.domain.start)
-    yield IntervalMap(restricted.range, domainStart).inverse
+    val newMappings =
+      for
+        map         <- map.mappings
+        restricted  <- restrictTo(map.range).mappings
+        domainStart <- map.inverse(restricted.domain.start)
+      yield IntervalMap(restricted.range, domainStart).inverse
     AlmanacMap(newMappings).withDomain(Interval(0, Long.MaxValue))
 
   def withDomain(domain: Interval): AlmanacMap =
@@ -49,22 +47,19 @@ case class AlmanacMap(val mappings: Seq[IntervalMap]):
     val windowedPairs = sortedMappings.zip(sortedMappings.drop(1))
     val gapMaps = windowedPairs.map { (left, right) =>
       val gap = right.domain.start - left.domain.end
-      Option.when(gap > 0) { IntervalMap.identity(left.domain.end, gap) }
+      Option.when(gap > 0)(IntervalMap.identity(left.domain.end, gap))
     }
-    val filledGaps = sortedMappings
-      .zip(gapMaps :+ Seq.empty)
+    val filledGaps = sortedMappings.zip(gapMaps :+ Seq.empty)
       .flatMap((interval, gap) => interval +: gap.iterator.toSeq)
 
     val min = filledGaps.head.domain.start
-    val initialInterval = Option.when(min > domain.start) {
-      IntervalMap.identity(domain.start, min)
-    }
+    val initialInterval = Option
+      .when(min > domain.start)(IntervalMap.identity(domain.start, min))
     val max = filledGaps.last.domain.end
-    val finalInterval = Option.when(max < domain.end) {
-      IntervalMap.identity(max, domain.end - max)
-    }
-    val mappingsWithEnds =
-      initialInterval.toSeq ++: filledGaps :++ finalInterval.toSeq
+    val finalInterval = Option
+      .when(max < domain.end)(IntervalMap.identity(max, domain.end - max))
+    val mappingsWithEnds = initialInterval.toSeq ++: filledGaps :++
+      finalInterval.toSeq
 
     AlmanacMap(mappingsWithEnds)
 
@@ -82,8 +77,8 @@ case class Interval(start: Long, length: Long):
     start <= other.start && other.end <= end
 
   def overlaps(other: Interval): Boolean =
-    contains(other.start) || contains(other.end)
-      || other.contains(start) || other.contains(end)
+    contains(other.start) || contains(other.end) || other.contains(start) ||
+      other.contains(end)
 
   def intersect(other: Interval): Interval =
     val intersectionStart = start.max(other.start)
@@ -104,9 +99,8 @@ def parseAlmanac(input: String): Almanac =
 
 def parseAlmanacMaps(maps: Seq[String]): Seq[AlmanacMap] =
   for case s"$source-to-$destination map:$intervals" <- maps
-  yield AlmanacMap(parseIntervals(intervals)).withDomain(
-    Interval(0, Long.MaxValue)
-  )
+  yield AlmanacMap(parseIntervals(intervals))
+    .withDomain(Interval(0, Long.MaxValue))
 
 def parseIntervals(intervals: String): Seq[IntervalMap] =
   for case s"$rangeStart $domainStart $length" <- intervals.linesIterator.toSeq
@@ -118,14 +112,11 @@ def locationNumber(seed: Long)(using almanac: Almanac): Long =
 // part 2
 case class AlmanacWithSeedIntervals(
     val seedIntervals: Seq[Interval],
-    val maps: Seq[AlmanacMap]
+    val maps: Seq[AlmanacMap],
 ):
   def apply(interval: Interval): Seq[Interval] =
-    maps
-      .reduce((accumulatedMap, map) => map.after(accumulatedMap))
-      .restrictTo(interval)
-      .mappings
-      .map(_.range)
+    maps.reduce((accumulatedMap, map) => map.after(accumulatedMap))
+      .restrictTo(interval).mappings.map(_.range)
 
   def lowestLocationNumber = seedIntervals.map(this(_).map(_.start).min).min
 
@@ -134,7 +125,7 @@ def lowestLocationNumberOfAnySeedWithRangeInput(input: String): Long =
 
 def parseAlmanacWithRangeInput(input: String): AlmanacWithSeedIntervals =
   val almanac = parseAlmanac(input)
-  val intervals = almanac.seeds
-    .grouped(2)
-    .map { case Seq(start, len) => Interval(start, len) }
+  val intervals = almanac.seeds.grouped(2).map { case Seq(start, len) =>
+    Interval(start, len)
+  }
   AlmanacWithSeedIntervals(intervals.toSeq, almanac.maps)

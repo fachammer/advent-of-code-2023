@@ -3,9 +3,10 @@ package day04
 // part 1
 case class Card(val number: Int, winning: Set[Int], our: Set[Int]):
   def matches: Int = winning.intersect(our).size
-  def points: Int = matches match
-    case 0 => 0
-    case n => scala.math.pow(2, n - 1).toInt
+  def points: Int =
+    matches match
+      case 0 => 0
+      case n => scala.math.pow(2, n - 1).toInt
 
 def points(input: String) = input.linesIterator.map(parseCard).map(_.points).sum
 

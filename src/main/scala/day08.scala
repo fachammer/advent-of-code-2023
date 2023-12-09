@@ -23,19 +23,19 @@ def requiredStepsAsGhostFromParsed(steps: String, nodes: DesertMap) =
 
   case class FindResult(val end: String, val pathLength: Long, val offset: Int)
   def findEndNode(startNode: String, stepOffset: Int) =
-    val (end, length, iter) = {
+    val (end, length, iter) =
       accumulate((startNode, 0L, repeat(steps.zipWithIndex))):
-        case (node, lengthFromStart, stepsWithIndexIter) =>
-          Option.when(lengthFromStart == 0 || !node.endsWith("Z")):
-            val (step, _) = stepsWithIndexIter.next
-            (nextNode(node, step), lengthFromStart + 1, stepsWithIndexIter)
-    }
+        case (node, lengthFromStart, stepsWithIndexIter) => Option
+            .when(lengthFromStart == 0 || !node.endsWith("Z")):
+              val (step, _) = stepsWithIndexIter.next
+              (nextNode(node, step), lengthFromStart + 1, stepsWithIndexIter)
     FindResult(end, length, iter.next._2)
 
   def cycleLengthStartingFrom(startNode: String) =
     val FindResult(endNode, length, stepsIndex) = findEndNode(startNode, 0)
     assertAllEndNodeCyclesHaveLength(endNode, stepsIndex, length)
-    // given the above assertion we know that the cycle length is the same as the initial path length from start to end
+    /* given the above assertion we know that the cycle length is the same as
+     * the initial path length from start to end */
     length
 
   def assertAllEndNodeCyclesHaveLength(end: String, offset: Int, length: Long) =
@@ -44,11 +44,11 @@ def requiredStepsAsGhostFromParsed(steps: String, nodes: DesertMap) =
         val foundNode = findEndNode(end, stepOffset)
         // we assume that there is a unique end node on every cycle
         assert(foundNode.end == end)
-        // and that the path lengths from end node to end node are the same regardless of where we are in the step sequence
+        /* and that the path lengths from end node to end node are the same
+         * regardless of where we are in the step sequence */
         assert(foundNode.pathLength == length)
         (count + 1, foundNode.offset)
     }
-    true
 
   def gcd(a: Long, b: Long): Long = if b == 0 then a else gcd(b, a % b)
   def lcm(a: Long, b: Long)       = (a * b) / gcd(a, b)
@@ -56,14 +56,16 @@ def requiredStepsAsGhostFromParsed(steps: String, nodes: DesertMap) =
   val startNodes = nodes.filter((k, _) => k.endsWith("A")).keys
   startNodes.map(cycleLengthStartingFrom).reduceOption(lcm)
 
-def nextNode(node: String, step: Char)(using nodes: DesertMap) = step match
-  case 'L' => nodes(node)._1
-  case 'R' => nodes(node)._2
+def nextNode(node: String, step: Char)(using nodes: DesertMap) =
+  step match
+    case 'L' => nodes(node)._1
+    case 'R' => nodes(node)._2
 
 def parseInput(input: String): (String, Map[String, (String, String)]) =
   val steps = input.linesIterator.next
-  def parseLine(line: String) = line match
-    case s"$node = ($left, $right)" => (node, (left, right))
+  def parseLine(line: String) =
+    line match
+      case s"$node = ($left, $right)" => (node, (left, right))
   val nodes = input.linesIterator.drop(2).map(parseLine).toMap
   (steps, nodes)
 

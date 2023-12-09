@@ -14,13 +14,10 @@ object Part:
   def apply[T](part: String => T, fileTestCases: (String, T)*): Part[T] =
     Part(part, fileTestCases.toArray)
 
-abstract class DayTest(using day: Day) extends AnyFreeSpec {
-  def testFn[T, R](f: T => R, cases: (String, (T, R))*) = {
+abstract class DayTest(using day: Day) extends AnyFreeSpec:
+  def testFn[T, R](f: T => R, cases: (String, (T, R))*) =
     for (name, (input, expected)) <- cases do
-      name in {
-        assert(f(input) == expected)
-      }
-  }
+      name in assert(f(input) == expected)
 
   extension [T, R](f: T => R)
     inline def testCases(inline cases: => (String, (T, R))*) = testFn(f, cases*)
@@ -30,14 +27,10 @@ abstract class DayTest(using day: Day) extends AnyFreeSpec {
   def parts: Seq[Part[Any]]
 
   s"day ${day.day}" - {
-    for (Part(fn, testCases), i) <- parts.zipWithIndex do {
-      s"part ${i + 1}" - {
-        fn.testCases(
-          testCases.map((fileName: String, output: Any) =>
-            (fileName, (file(fileName), output))
-          )*
-        )
-      }
-    }
+    for (Part(fn, testCases), i) <- parts.zipWithIndex do
+      s"part ${i + 1}" - fn.testCases(
+        testCases.map((fileName: String, output: Any) =>
+          (fileName, (file(fileName), output)),
+        )*,
+      )
   }
-}

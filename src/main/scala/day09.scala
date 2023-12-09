@@ -4,8 +4,7 @@ package day09
 def extrapolatedSum(input: String) = parseHistories(input).map(extrapolate).sum
 
 def extrapolate(seq: Array[Int]): Int =
-  if seq.forall(_ == 0) then 0
-  else extrapolate(differences(seq)) + seq.last
+  if seq.forall(_ == 0) then 0 else extrapolate(differences(seq)) + seq.last
 
 // part 2
 def extrapolatedPreviousSum(input: String) =

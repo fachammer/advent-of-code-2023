@@ -6,7 +6,7 @@ def productOfNumberOfWaysToBeatRecord(input: String) =
   val distancePattern = "Distance: +(.*)".r
   val Seq(
     timePattern(durationsString),
-    distancePattern(recordDistancesString)
+    distancePattern(recordDistancesString),
   ) = input.linesIterator.toSeq: @unchecked
 
   val raceDurations   = durationsString.split(" +").map(_.toLong)

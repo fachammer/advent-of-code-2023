@@ -1,7 +1,7 @@
 package debug
 
 def dbg[T](value: sourcecode.Text[T])(using
-    enclosing: sourcecode.Enclosing
+    enclosing: sourcecode.Enclosing,
 ): T =
   pprint.log(value)
   value.value

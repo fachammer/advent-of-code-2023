@@ -13,39 +13,35 @@ enum HandType:
 case class Hand(hand: String)
 case class Rules(val cardValue: Char => Int, handType: Hand => HandType)
 
-val noJokerRules = Rules(cardValue, handTypeWithoutJoker)
-def totalWinningsNoJoker(input: String) =
-  totalWinnings(noJokerRules, input)
+val noJokerRules                        = Rules(cardValue, handTypeWithoutJoker)
+def totalWinningsNoJoker(input: String) = totalWinnings(noJokerRules, input)
 
 def totalWinnings(rules: Rules, input: String) =
   import scala.math.Ordered.orderingToOrdered
-  import scala.math.Ordering.Implicits._
+  import scala.math.Ordering.Implicits.*
   val handTypeOrdering: Ordering[HandType] = Ordering.by(t => t.ordinal)
   given Ordering[(HandType, Seq[Int])] =
     Ordering.Tuple2(handTypeOrdering.reverse, Ordering[Seq[Int]])
-  given Ordering[Hand] = Ordering.by((hand: Hand) =>
-    (rules.handType(hand), hand.hand.map(rules.cardValue))
-  )
+  given Ordering[Hand] =
+    Ordering.by((hand: Hand) =>
+      (rules.handType(hand), hand.hand.map(rules.cardValue)),
+    )
 
-  parseHandBids(input).sorted
-    .map(_._2)
-    .zipWithIndex
-    .map { (bid, index) => bid * (index + 1) }
-    .sum
+  parseHandBids(input).sorted.map(_._2).zipWithIndex
+    .map((bid, index) => bid * (index + 1)).sum
 
 def parseHandBids(input: String): Seq[(Hand, Int)] =
-  input.linesIterator
-    .map(_.span(x => !x.isSpaceChar))
-    .map((hand, bid) => (Hand(hand), bid.strip.toInt))
-    .toSeq
+  input.linesIterator.map(_.span(x => !x.isSpaceChar))
+    .map((hand, bid) => (Hand(hand), bid.strip.toInt)).toSeq
 
-def cardValue(char: Char): Int = char match
-  case 'A'            => 14
-  case 'K'            => 13
-  case 'Q'            => 12
-  case 'J'            => 11
-  case 'T'            => 10
-  case x if x.isDigit => x.asDigit
+def cardValue(char: Char): Int =
+  char match
+    case 'A'            => 14
+    case 'K'            => 13
+    case 'Q'            => 12
+    case 'J'            => 11
+    case 'T'            => 10
+    case x if x.isDigit => x.asDigit
 
 def handTypeWithoutJoker(hand: Hand): HandType =
   val handType = sizeType(hand.hand.groupBy(x => x))
