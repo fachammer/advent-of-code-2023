@@ -50,10 +50,10 @@ def requiredStepsAsGhostFromParsed(steps: String, nodes: DesertMap) =
     }
     true
 
-  def gcd(a: Long, b: Long): Long = if (b == 0) a else gcd(b, a % b)
+  def gcd(a: Long, b: Long): Long = if b == 0 then a else gcd(b, a % b)
   def lcm(a: Long, b: Long)       = (a * b) / gcd(a, b)
 
-  val startNodes = nodes.filterKeys(_.endsWith("A")).keys
+  val startNodes = nodes.filter((k, _) => k.endsWith("A")).keys
   startNodes.map(cycleLengthStartingFrom).reduceOption(lcm)
 
 def nextNode(node: String, step: Char)(using nodes: DesertMap) = step match
@@ -67,7 +67,7 @@ def parseInput(input: String): (String, Map[String, (String, String)]) =
   val nodes = input.linesIterator.drop(2).map(parseLine).toMap
   (steps, nodes)
 
-def repeat[A](seq: Seq[A]) = LazyList.continually(seq).flatten.toIterator
+def repeat[A](seq: Seq[A]) = LazyList.continually(seq).flatten.iterator
 
 def accumulate[S](initial: S)(op: S => Option[S]): S =
   var a = initial

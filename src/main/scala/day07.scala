@@ -19,9 +19,10 @@ def totalWinningsNoJoker(input: String) =
 
 def totalWinnings(rules: Rules, input: String) =
   import scala.math.Ordered.orderingToOrdered
+  import scala.math.Ordering.Implicits._
   val handTypeOrdering: Ordering[HandType] = Ordering.by(t => t.ordinal)
-  given Ordering[(HandType, Iterable[Int])] =
-    Ordering.Tuple2(handTypeOrdering.reverse, Ordering.Iterable[Int])
+  given Ordering[(HandType, Seq[Int])] =
+    Ordering.Tuple2(handTypeOrdering.reverse, Ordering[Seq[Int]])
   given Ordering[Hand] = Ordering.by((hand: Hand) =>
     (rules.handType(hand), hand.hand.map(rules.cardValue))
   )
@@ -66,7 +67,7 @@ def totalWinningsWithJoker(input: String) = totalWinnings(jokerRules, input)
 def cardValueWithJoker(char: Char) = if char == 'J' then 1 else cardValue(char)
 
 def handTypeWithJoker(hand: Hand): HandType =
-  val handType = sizeType(hand.hand.groupBy(x => x).filterKeys(_ != 'J').toMap)
+  val handType = sizeType(hand.hand.groupBy(x => x).filter((k, _) => k != 'J'))
 
   handType match
     case Seq() | Seq(_)  => HandType.FiveOfAKind

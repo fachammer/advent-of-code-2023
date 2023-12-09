@@ -53,7 +53,7 @@ case class AlmanacMap(val mappings: Seq[IntervalMap]):
     }
     val filledGaps = sortedMappings
       .zip(gapMaps :+ Seq.empty)
-      .flatMap((interval, gap) => interval +: gap.toSeq)
+      .flatMap((interval, gap) => interval +: gap.iterator.toSeq)
 
     val min = filledGaps.head.domain.start
     val initialInterval = Option.when(min > domain.start) {
@@ -98,8 +98,8 @@ def lowestLocationNumberOfAnySeed(input: String): Long =
 
 def parseAlmanac(input: String): Almanac =
   val s"seeds: $numbers" :: mapsStrings = input.split("\n\n").toList: @unchecked
-  val seeds                             = numbers.split(" ").map(_.toLong)
-  val maps                              = parseAlmanacMaps(mapsStrings)
+  val seeds = numbers.split(" ").toIndexedSeq.map(_.toLong)
+  val maps  = parseAlmanacMaps(mapsStrings)
   Almanac(seeds, maps)
 
 def parseAlmanacMaps(maps: Seq[String]): Seq[AlmanacMap] =

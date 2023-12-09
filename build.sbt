@@ -18,6 +18,14 @@ lazy val root = project
     name         := "Advent of Code 2023",
     version      := "0.1.0-SNAPSHOT",
     scalaVersion := "3.3.1",
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-feature",
+      "-indent",
+      "-new-syntax",
+      "-Wunused:all",
+      "-Wvalue-discard"
+    ),
     Test / testOptions ++= Seq(
       Tests.Argument("-oD"),
       Tests.Argument("-W", "10", "10")

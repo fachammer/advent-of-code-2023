@@ -1,9 +1,8 @@
 package day02.test
 
-import test.{*, given}
+import test.*
 import day02.{*, given}
-
-given Day = 2
+given Day = Day(2)
 class Test extends DayTest:
   val exampleGames = parseGames(file("example"))
   val inputGames   = parseGames(file("input"))

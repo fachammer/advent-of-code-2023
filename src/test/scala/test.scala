@@ -5,9 +5,6 @@ import org.scalatest.freespec.AnyFreeSpec
 
 case class Day(val day: Int)
 
-given Conversion[Day, Int] = _.day
-given Conversion[Int, Day] = Day(_)
-
 def file(name: String)(using day: Day) =
   Source.fromResource(f"day${day.day}%02d/$name").mkString
 

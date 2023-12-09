@@ -17,8 +17,8 @@ def productOfNumberOfWaysToBeatRecord(input: String) =
 
 def numberOfWaysToBeatRecord(raceDuration: Long, recordDistance: Long): Long =
   val discriminant = raceDuration * raceDuration - 4 * recordDistance
-  val leftRoot     = 0.5 * (raceDuration - scala.math.sqrt(discriminant))
-  val rightRoot    = 0.5 * (raceDuration + scala.math.sqrt(discriminant))
+  val leftRoot  = 0.5 * (raceDuration - scala.math.sqrt(discriminant.toDouble))
+  val rightRoot = 0.5 * (raceDuration + scala.math.sqrt(discriminant.toDouble))
   rightRoot.previousLong - leftRoot.nextLong + 1
 
 // part 2

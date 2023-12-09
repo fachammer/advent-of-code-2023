@@ -1,9 +1,7 @@
 package day01.test
-
-import test.{*, given}
+import test.*
 import day01.*
-
-given Day = 1
+given Day = Day(1)
 class Test extends DayTest {
   def parts = Seq(
     Part(sumOfCalibrationValues, "example1" -> 142, "input" -> 56042),

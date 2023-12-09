@@ -1,7 +1,7 @@
 package day05.test
-import test.{*, given}
-import day05.{*, given}
-given Day = 5
+import test.*
+import day05.*
+given Day = Day(5)
 class Test extends DayTest:
   def parts = Seq(
     Part(lowestLocationNumberOfAnySeed, "example" -> 35, "input" -> 486613012),

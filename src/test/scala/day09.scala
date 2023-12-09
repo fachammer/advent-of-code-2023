@@ -1,7 +1,7 @@
 package day09.test
-import test.{*, given}
+import test.*
 import day09.*
-given Day = 9
+given Day = Day(9)
 class Day09 extends DayTest:
   def parts = Seq(
     Part(extrapolatedSum, "example"         -> 114, "input" -> 1479011877),

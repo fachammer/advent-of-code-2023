@@ -1,7 +1,7 @@
 package day03
 
 // part 1
-type Schematic = Array[String]
+type Schematic = Seq[String]
 case class SchematicNumber(val number: Int, val row: Int, val startCol: Int):
   def range = startCol until (startCol + number.toString.length)
 
@@ -15,7 +15,7 @@ case class SchematicNumber(val number: Int, val row: Int, val startCol: Int):
     border.offset(startCol, row).withinBounds.toSet
 
 def partNumberSum(input: String): Int =
-  given Schematic = input.linesIterator.toArray
+  given Schematic = input.linesIterator.toSeq
   partNumbers.map(_.number).sum
 
 def partNumbers(using schematic: Schematic) = for
@@ -49,7 +49,7 @@ case class Gear(val first: SchematicNumber, val second: SchematicNumber):
   def ratio = first.number * second.number
 
 def gearRatioSum(input: String): Int =
-  given Schematic = input.linesIterator.toArray
+  given Schematic = input.linesIterator.toSeq
   gears.map(_.ratio).sum
 
 def gears(using schematic: Schematic): Seq[Gear] = for
