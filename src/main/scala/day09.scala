@@ -11,3 +11,12 @@ def extrapolate(sequence: Seq[Int]): Int =
 
 def differences(sequence: Seq[Int]): Seq[Int] =
   sequence.drop(1).zip(sequence).map(_ - _)
+
+// part 2
+def extrapolatedPreviousValuesSum(input: String) =
+  val histories = input.linesIterator.map(_.split(" ").map(_.toInt).toSeq)
+  histories.map(extrapolatePrevious).sum
+
+def extrapolatePrevious(sequence: Seq[Int]): Int =
+  if sequence.forall(_ == 0) then 0
+  else sequence.head - extrapolatePrevious(differences(sequence))
