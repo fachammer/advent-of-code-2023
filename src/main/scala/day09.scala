@@ -1,22 +1,19 @@
 package day09
 
 // part 1
-def extrapolatedValuesSum(input: String) =
-  val histories = input.linesIterator.map(_.split(" ").map(_.toInt).toSeq)
-  histories.map(extrapolate).sum
+def extrapolatedSum(input: String) = parseHistories(input).map(extrapolate).sum
 
-def extrapolate(sequence: Seq[Int]): Int =
-  if sequence.forall(_ == 0) then 0
-  else extrapolate(differences(sequence)) + sequence.last
-
-def differences(sequence: Seq[Int]): Seq[Int] =
-  sequence.drop(1).zip(sequence).map(_ - _)
+def extrapolate(seq: Array[Int]): Int =
+  if seq.forall(_ == 0) then 0
+  else extrapolate(differences(seq)) + seq.last
 
 // part 2
-def extrapolatedPreviousValuesSum(input: String) =
-  val histories = input.linesIterator.map(_.split(" ").map(_.toInt).toSeq)
-  histories.map(extrapolatePrevious).sum
+def extrapolatedPreviousSum(input: String) =
+  parseHistories(input).map(extrapolatePrevious).sum
 
-def extrapolatePrevious(sequence: Seq[Int]): Int =
-  if sequence.forall(_ == 0) then 0
-  else sequence.head - extrapolatePrevious(differences(sequence))
+def extrapolatePrevious(seq: Array[Int]): Int =
+  if seq.forall(_ == 0) then 0
+  else seq.head - extrapolatePrevious(differences(seq))
+
+def parseHistories(s: String) = s.linesIterator.map(_.split(" ").map(_.toInt))
+def differences(seq: Array[Int]) = seq.drop(1).zip(seq).map(_ - _)
