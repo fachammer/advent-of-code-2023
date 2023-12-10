@@ -2,7 +2,7 @@ package day09.test
 import test.*
 import day09.*
 given Day = Day(9)
-class Day09 extends DayTest:
+class Test extends DayTest:
   def parts =
     Seq(
       Part(extrapolatedSum, "example"         -> 114, "input" -> 1479011877),
