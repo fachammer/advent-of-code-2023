@@ -5,15 +5,17 @@ type Map      = Seq[String]
 type Position = (Int, Int)
 def farthestDistanceOnMainLoop(input: String) =
   given Map = input.linesIterator.toSeq
+  (mainLoop.length / 2.0).ceil.toInt
+
+def mainLoop(using Map) =
   val start = startPosition
   val next  = adjacentPipes(start).head
-  val loop = accumulate(Seq(next, start)) { case path @ now :: prev :: _ =>
+  accumulate(Seq(next, start)) { case path @ now :: prev :: _ =>
     val nextPossibilities = adjacentPipes(now).filter(_ != prev)
     assert(nextPossibilities.length == 1)
     val next = nextPossibilities.head
     Option.when(next != start)(next +: path)
-  }
-  (loop.length / 2.0).ceil.toInt
+  }.reverse
 
 def startPosition(using map: Map): Position =
   val startPositions =
@@ -74,4 +76,53 @@ def accumulate[S](initial: S)(op: S => Option[S]): S =
     op(a) match
       case None    => return a
       case Some(b) => a = b
+  ???
+
+// part 2
+def numberOfEnclosedTiles(input: String) =
+  given map: Map            = input.linesIterator.toSeq
+  given loop: Set[Position] = mainLoop.toSet
+  val enclosedTiles =
+    for
+      (line, row) <- map.zipWithIndex
+      (char, col) <- line.zipWithIndex
+      if !loop.contains((col, row)) && isInsideMainLoop(col, row)
+    yield (col, row)
+  enclosedTiles.size
+
+def isInsideMainLoop(using
+    loop: Set[Position],
+    map: Map,
+)(col: Int, row: Int): Boolean =
+  def isOnMainLoop(pos: Position) = loop.contains(pos)
+  var pos                         = (col, row)
+  var intersectionCount           = 0
+  while true do
+    if !isInBounds.tupled(pos) then return intersectionCount % 2 == 1
+
+    if isInBounds.tupled(pos) && !isOnMainLoop(pos) then
+      while isInBounds.tupled(pos) && !isOnMainLoop(pos) do
+        pos = (pos._1 + 1, row)
+    else if isInBounds.tupled(pos) && isOnMainLoop(pos) then
+      if connectsRight(charAt.tupled(pos)) then
+        val loopEnterPos  = pos
+        val loopEnterPipe = charAt.tupled(loopEnterPos)
+        while isInBounds.tupled(pos) && isOnMainLoop(pos) &&
+          connectsRight(charAt.tupled(pos))
+        do pos = (pos._1 + 1, row)
+
+        val pipe = charAt.tupled(pos)
+        if connectsUp(loopEnterPipe) && connectsUp(pipe) ||
+          connectsDown(loopEnterPipe) && connectsDown(pipe)
+        then intersectionCount += 2
+        else if connectsUp(loopEnterPipe) && connectsDown(pipe) ||
+          connectsDown(loopEnterPipe) && connectsUp(pipe)
+        then intersectionCount += 1
+        else ???
+
+        pos = (pos._1 + 1, row)
+      else
+        pos = (pos._1 + 1, row)
+        intersectionCount += 1
+
   ???
