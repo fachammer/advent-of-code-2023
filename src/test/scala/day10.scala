@@ -19,3 +19,11 @@ class Test extends DayTest:
         "input"    -> 453,
       ),
     )
+
+import org.openjdk.jmh.annotations.*
+@State(Scope.Benchmark)
+class Bench:
+  val input = file("input")
+
+  @Benchmark
+  def bench = numberOfEnclosedTiles(input)

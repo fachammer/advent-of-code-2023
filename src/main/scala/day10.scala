@@ -1,17 +1,17 @@
 package day10
 
 // part 1
-type Map      = Seq[String]
+type Map      = IndexedSeq[String]
 type Position = (Int, Int)
 def farthestDistanceOnMainLoop(input: String) =
-  given Map = input.linesIterator.toSeq
+  given Map = input.linesIterator.toIndexedSeq
   (mainLoop.length / 2.0).ceil.toInt
 
 def mainLoop(using Map) =
-  val start = startPosition
-  val next  = adjacentPipes(start).head
-  accumulate(Seq(next, start)) { case path @ now :: prev :: _ =>
-    val nextPossibilities = adjacentPipes(now).filter(_ != prev)
+  val start @ (startCol, startRow) = startPosition
+  val next                         = adjacentPipes(startCol, startRow).head
+  accumulate(Seq(next, start)) { case path @ (col, row) :: prev :: _ =>
+    val nextPossibilities = adjacentPipes(col, row).filter(_ != prev)
     assert(nextPossibilities.length == 1)
     val next = nextPossibilities.head
     Option.when(next != start)(next +: path)
@@ -23,52 +23,43 @@ def startPosition(using map: Map): Position =
       (line, row) <- map.zipWithIndex
       (char, col) <- line.zipWithIndex if char == 'S'
     yield (col, row)
-  assert(startPositions.length == 1)
   startPositions.head
 
-def adjacentPipes(using map: Map)(position: Position): Seq[Position] =
-  val pipe = charAt.tupled(position)
-  val differences = Seq((-1, 0), (0, -1), (1, 0), (0, 1))
-    .filter { (colDiff, rowDiff) =>
-      isInBounds(position._1 + colDiff, position._2 + rowDiff)
-    }.map { case (colDiff, rowDiff) =>
-      (colDiff, rowDiff, charAt(position._1 + colDiff, position._2 + rowDiff))
-    }
-  val adj =
+def adjacentPipes(using map: Map)(col: Int, row: Int): Seq[Position] =
+  Seq((col - 1, row), (col, row - 1), (col + 1, row), (col, row + 1)).filter {
+    (c, r) => canConnectTo(row, col, c, r)
+  }
+
+def canConnectTo(using
+    Map,
+)(fromRow: Int, fromCol: Int, toCol: Int, toRow: Int): Boolean =
+  val canConnectIfInBounds =
     for
-      difference @ (colDiff, rowDiff, char) <- differences
-      connects = difference match
-        case (-1, 0, p) => connectsLeft(pipe, p)
-        case (0, -1, p) => connectsUp(pipe, p)
-        case (1, 0, p)  => connectsRight(pipe, p)
-        case (0, 1, p)  => connectsDown(pipe, p)
-      if connects
-    yield (position._1 + colDiff, position._2 + rowDiff)
-  adj
+      fromPipe <- charAt(fromCol, fromRow)
+      toPipe   <- charAt(toCol, toRow)
+      colDiff = toCol - fromCol
+      rowDiff = toRow - fromRow
+    yield (colDiff, rowDiff) match
+      case (-1, 0) => canConnectHorizontally(fromPipe, toPipe)
+      case (0, -1) => canConnectVertically(fromPipe, toPipe)
+      case (1, 0)  => canConnectHorizontally(toPipe, fromPipe)
+      case (0, 1)  => canConnectVertically(toPipe, fromPipe)
 
-def connectsUp(char: Char): Boolean    = Seq('|', 'L', 'J', 'S').contains(char)
-def connectsLeft(char: Char): Boolean  = Seq('-', 'J', '7', 'S').contains(char)
-def connectsDown(char: Char): Boolean  = Seq('|', 'F', '7', 'S').contains(char)
-def connectsRight(char: Char): Boolean = Seq('-', 'F', 'L', 'S').contains(char)
+  canConnectIfInBounds.getOrElse(false)
 
-def connectsLeft(from: Char, to: Char): Boolean =
-  connectsLeft(from) && connectsRight(to)
-def connectsUp(from: Char, to: Char): Boolean =
-  connectsUp(from) && connectsDown(to)
-def connectsRight(from: Char, to: Char): Boolean =
-  connectsRight(from) && connectsLeft(to)
-def connectsDown(from: Char, to: Char): Boolean =
-  connectsDown(from) && connectsUp(to)
+def canConnectUp(char: Char)    = Seq('|', 'L', 'J', 'S').contains(char)
+def canConnectLeft(char: Char)  = Seq('-', 'J', '7', 'S').contains(char)
+def canConnectDown(char: Char)  = Seq('|', 'F', '7', 'S').contains(char)
+def canConnectRight(char: Char) = Seq('-', 'F', 'L', 'S').contains(char)
 
-extension (positions: Seq[Position])
-  def withinBounds(using Map) = positions.filter(isInBounds.tupled)
+def canConnectHorizontally(from: Char, to: Char) =
+  canConnectLeft(from) && canConnectRight(to)
+def canConnectVertically(from: Char, to: Char) =
+  canConnectUp(from) && canConnectDown(to)
 
-def lineAt(using map: Map)(row: Int)      = map(row)
-def charAt(using Map)(col: Int, row: Int) = lineAt(row)(col)
-def isInBounds(using map: Map)(col: Int, row: Int) =
-  val width  = lineAt(0).length
-  val height = map.length
-  (0 until width).contains(col) && (0 until height).contains(row)
+def lineAt(using map: Map)(row: Int)      = map.lift(row)
+def charAt(using Map)(col: Int, row: Int) = lineAt(row).flatMap(_.lift(col))
+def isInBounds(using map: Map)(col: Int, row: Int) = charAt(col, row).isDefined
 
 def accumulate[S](initial: S)(op: S => Option[S]): S =
   var a = initial
@@ -80,7 +71,7 @@ def accumulate[S](initial: S)(op: S => Option[S]): S =
 
 // part 2
 def numberOfEnclosedTiles(input: String) =
-  given map: Map            = input.linesIterator.toSeq
+  given map: Map            = input.linesIterator.toIndexedSeq
   given loop: Set[Position] = mainLoop.toSet
   val enclosedTiles =
     for
@@ -94,35 +85,33 @@ def isInsideMainLoop(using
     loop: Set[Position],
     map: Map,
 )(col: Int, row: Int): Boolean =
-  def isOnMainLoop(pos: Position) = loop.contains(pos)
-  var pos                         = (col, row)
-  var intersectionCount           = 0
-  while true do
-    if !isInBounds.tupled(pos) then return intersectionCount % 2 == 1
+  var currentCol        = col
+  var loopIntersections = 0
 
-    if isInBounds.tupled(pos) && !isOnMainLoop(pos) then
-      while isInBounds.tupled(pos) && !isOnMainLoop(pos) do
-        pos = (pos._1 + 1, row)
-    else if isInBounds.tupled(pos) && isOnMainLoop(pos) then
-      if connectsRight(charAt.tupled(pos)) then
-        val loopEnterPos  = pos
-        val loopEnterPipe = charAt.tupled(loopEnterPos)
-        while isInBounds.tupled(pos) && isOnMainLoop(pos) &&
-          connectsRight(charAt.tupled(pos))
-        do pos = (pos._1 + 1, row)
+  def insideBounds = isInBounds(currentCol, row)
+  def isOnMainLoop = loop.contains((currentCol, row))
+  def pipe         = charAt(currentCol, row).get
+  def stepRight()  = currentCol += 1
+  def goRightUntilLoopCornerOrOutOfBounds() =
+    while insideBounds && isOnMainLoop && canConnectRight(pipe) do stepRight()
+  def canGoRightOnLoop = canConnectRight(pipe)
+  def isCrossing(enteredPipe: Char) =
+    !(canConnectUp(enteredPipe) && canConnectUp(pipe)) &&
+      !(canConnectDown(enteredPipe) && canConnectDown(pipe))
+  def goRightUntilMainLoopOrOutOfBounds() =
+    while insideBounds && !isOnMainLoop do stepRight()
 
-        val pipe = charAt.tupled(pos)
-        if connectsUp(loopEnterPipe) && connectsUp(pipe) ||
-          connectsDown(loopEnterPipe) && connectsDown(pipe)
-        then intersectionCount += 2
-        else if connectsUp(loopEnterPipe) && connectsDown(pipe) ||
-          connectsDown(loopEnterPipe) && connectsUp(pipe)
-        then intersectionCount += 1
-        else ???
+  while insideBounds do
+    if !isOnMainLoop then goRightUntilMainLoopOrOutOfBounds()
+    else if canGoRightOnLoop then
+      val loopEnterPipe = pipe
+      goRightUntilLoopCornerOrOutOfBounds()
 
-        pos = (pos._1 + 1, row)
-      else
-        pos = (pos._1 + 1, row)
-        intersectionCount += 1
+      if isCrossing(loopEnterPipe) then loopIntersections += 1
 
-  ???
+      stepRight()
+    else // on loop but can't go further without going off loop
+      loopIntersections += 1
+      stepRight()
+
+  loopIntersections % 2 == 1
