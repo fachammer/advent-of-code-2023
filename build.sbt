@@ -20,8 +20,9 @@ lazy val root = project.in(file(".")).settings(
     "-Wunused:all",
     "-Wvalue-discard",
   ),
-  fork                := true,
-  Global / cancelable := true,
+  fork                          := true,
+  Global / cancelable           := true,
+  Global / onChangedBuildSource := ReloadOnSourceChanges,
   Test / testOptions ++=
     Seq(Tests.Argument("-oD"), Tests.Argument("-W", "10", "10")),
   libraryDependencies ++= Seq(
