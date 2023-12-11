@@ -6,19 +6,27 @@ def sumOfShortestPaths(input: String) =
 
 // part 2
 def sumOfShortestPathsWithExpansion(expansion: Int)(input: String) =
-  val galaxyPositions = (for
-    (line, row) <- input.linesIterator.zipWithIndex
-    case ('#', col) <- line.zipWithIndex
-  yield (col, row)).toSeq
-  val universe           = input.linesIterator.toSeq
-  val transposedUniverse = universe.transpose
+  val lines = input.linesIterator.toSeq
+  val expansionRows = lines.zipWithIndex
+    .filter((line, _) => line.forall(_ == '.')).map((_, row) => row).toSet
+  val expansionCols = lines.transpose.zipWithIndex
+    .filter((line, _) => line.forall(_ == '.')).map((_, col) => col).toSet
+  val rowDistance = distance(expansion, expansionRows)
+  val colDistance = distance(expansion, expansionCols)
 
-  galaxyPositions.combinations(2).map { case Seq((colA, rowA), (colB, rowB)) =>
-    val colDistance = ((colA.min(colB) + 1) to colA.max(colB)).map(col =>
-      if transposedUniverse(col).forall(_ == '.') then expansion else 1,
-    ).sum.toLong
-    val rowDistance = ((rowA.min(rowB) + 1) to rowA.max(rowB))
-      .map(row => if universe(row).forall(_ == '.') then expansion else 1).sum
-      .toLong
-    colDistance + rowDistance
+  val galaxyPositions =
+    for
+      (line, row) <- lines.zipWithIndex
+      case ('#', col) <- line.zipWithIndex
+    yield (col, row)
+  val galaxyPairs = galaxyPositions.toSeq.combinations(2)
+  galaxyPairs.map { case Seq((colA, rowA), (colB, rowB)) =>
+    (colDistance(colA, colB) + rowDistance(rowA, rowB)).toLong
   }.sum
+
+def distance(expansion: Int, expansionIndices: Set[Int])(from: Int, to: Int) =
+  val (min, max) = from.minMax(to)
+  val expansions = (min + 1 until max).count(expansionIndices.contains)
+  (to - from).abs + expansions * (expansion - 1)
+
+extension (a: Int) def minMax(b: Int) = if a <= b then (a, b) else (b, a)
