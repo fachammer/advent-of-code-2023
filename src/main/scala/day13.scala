@@ -9,6 +9,7 @@ def summarize(input: String) = patterns(input).map(reflectionCount).sum
 
 def patterns(input: String) =
   input.split("\n\n").map(_.linesIterator.map(_.toVector).toVector)
+
 def reflectionCount(pattern: Pattern): Int =
   reflections(pattern).headOption.map(reflectionValue).getOrElse(0)
 
