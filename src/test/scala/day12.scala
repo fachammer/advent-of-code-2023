@@ -6,11 +6,7 @@ class Test extends DayTest:
   def parts =
     Seq(
       Part(sumOfSpringConfigurations, "example" -> 21, "input" -> 8270),
-      Part(
-        sumOfUnfoldedSpringConfigurations,
-        "example" -> 525152,
-        // "input" -> 0
-      ),
+      Part(sumOfUnfoldedSpringConfigurations, "example" -> 525152, "input" -> 0),
     )
 
   "number of spring configurations" - numberOfSpringConfigurations.testCases(
@@ -26,8 +22,10 @@ class Test extends DayTest:
     "d unfold" :> (unfold("????.#...#... 4,1,1")       -> 16),
     "e unfold" :> (unfold("????.######..#####. 1,6,5") -> 2500),
     "f unfold" :> (unfold("?###???????? 3,2,1")        -> 506250),
+    // "????" :> (unfold("???????????? 1,1,1,2,1")        -> 0),
+    // "?????" :> (unfold("??????????????? 1,1,1,2,1")    -> 0),
   )
 
-  "process damages" -
-    processDamages.tupled
-      .testCases("b" :> (Array(1, 1, 3), ".??..??...?##.") -> ".??..??...###.")
+  // "process damages" -
+  //   processDamages.tupled
+  //     .testCases("b" :> (Array(1, 1, 3), ".??..??...?##.") -> ".??..??...###.")

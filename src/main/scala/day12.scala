@@ -1,6 +1,7 @@
 package day12
 
 import scala.util.Try
+import debug.*
 
 // part 1
 def sumOfSpringConfigurations(input: String) =
@@ -61,26 +62,80 @@ def processDamages(damageGroupSizes: Array[Int], s: String): String =
 def numberOfSpringConfigurations(line: String) =
   val (springs, damageGroupSizes) = parseLine(line)
 
-  import scala.collection.mutable
-  val stack     = mutable.Stack(springs)
-  val satisfied = mutable.Stack[String]()
+  def factorial(number: Int): Long = (1 to number).foldLeft(1L)(_ * _)
 
-  def isDefinitelyValid(springs: String) =
-    !springs.contains("?") && springs.split(raw"\.+").map(_.length)
-      .filter(_ != 0).sameElements(damageGroupSizes)
+  def binomial(n: Int, k: Int): Long = ((n - k + 1) to n).foldLeft(1L)(_ * _) /
+    factorial(k)
 
-  while !stack.isEmpty do
-    val s = Try(processDamages(damageGroupSizes, stack.pop))
-    if !s.isFailure then
-      s.get match
-        case s if s.contains('?') =>
-          val withWorking = s.replaceFirst(raw"\?", ".")
-          val withDamaged = s.replaceFirst(raw"\?", "#")
-          stack.push(withWorking, withDamaged)
-        case s if isDefinitelyValid(s) => satisfied.push(s)
-        case _                         =>
+  def weakCompositionsIntoParts(n: Int)(parts: Int): Long =
+    binomial(n + parts - 1, n)
 
-  satisfied.length
+  def splitAtIndicesWithoutSeparators(
+      seq: Array[Int],
+      indices: Array[Int],
+  ): Array[Array[Int]] =
+    if indices.size == 0 then Array(seq)
+    else
+      val (first, rest) = seq.splitAt(indices.head)
+      first +: splitAtIndicesWithoutSeparators(
+        rest.tail,
+        indices.tail.map(_ - indices.head),
+      )
+
+  def arrangements(line: String, sizes: Array[Int]): Long =
+    assert(sizes.forall(_ > 0))
+    val result =
+      if sizes.sum + sizes.length - 1 > line.length then 0L
+      else if sizes.isEmpty then if line.contains('#') then 0L else 1L
+      else if line.isEmpty then 0L
+      else if line.length == 1 then
+        line.head match
+          case '#' | '?' if sizes.sameElements(Array(1)) => 1L
+          case _                                         => 0L
+      else if line.dropWhile(_ == '.').takeWhile(_ != '.').contains('#') &&
+        line.dropWhile(_ == '.').takeWhile(_ != '.').length < sizes.head
+      then 0
+      else if line.forall(_ == '?') then
+        weakCompositionsIntoParts(line.length - sizes.sum - sizes.length + 1)(
+          sizes.length + 1,
+        )
+      else if line.count(_ == '#') > sizes.sum then 0L
+      else
+        val maxSize        = sizes.max
+        val maxSizeRegex   = s"#{$maxSize}"
+        val maxSizeMatches = maxSizeRegex.r.findAllMatchIn(line)
+        if maxSizeMatches.length > sizes.count(_ == maxSize) then 0L
+        else if maxSizeMatches.length == sizes.count(_ == maxSize) then
+          val substrings = line.split(maxSizeRegex)
+          val subSizes = splitAtIndicesWithoutSeparators(
+            sizes,
+            sizes.zipWithIndex.filter((s, _) => s == maxSize).map((_, i) => i),
+          )
+          subSizes.d
+          substrings.zip(subSizes)
+            .map((substring, subsizes) => arrangements(substring, subsizes)).sum
+        else
+          line.head match
+            case '.' => arrangements(line.dropWhile(_ == '.'), sizes)
+            case '#' =>
+              if line.takeWhile(_ == '#').size > sizes.head then 0L
+              else if line.length < sizes.head then 0L
+              else
+                val (sizeBlock, rest) = line.splitAt(sizes.head)
+                if sizeBlock.contains('.') then 0L
+                else if rest.nonEmpty && rest.head == '#' then 0L
+                else arrangements('.' +: rest.tail, sizes.tail)
+            case '?' =>
+              if !line.endsWith("?") then
+                arrangements(line.reverse, sizes.reverse)
+              else
+                arrangements('.' +: line.tail, sizes) +
+                  arrangements('#' +: line.tail, sizes)
+
+    // (line, sizes, result).d
+    result
+
+  arrangements(springs, damageGroupSizes)
 
 def parseLine(line: String) =
   val s"$springs $constraints" = line: @unchecked
@@ -89,9 +144,11 @@ def parseLine(line: String) =
 
 // part 2
 def sumOfUnfoldedSpringConfigurations(input: String) =
-  input.linesIterator.zipWithIndex
-    .tapEach((line, i) => println(s"at line $i: $line"))
-    .map((line, _) => unfold(line)).map(numberOfSpringConfigurations).sum
+  input.linesIterator.zipWithIndex.map((line, i) => (unfold(line), i)).map {
+    (line, i) =>
+      println(s"at line $i: $line")
+      line
+  }.map(numberOfSpringConfigurations).sum
 
 def unfold(line: String): String =
   val s"$springs $constraints" = line: @unchecked
