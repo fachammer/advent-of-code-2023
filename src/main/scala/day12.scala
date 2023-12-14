@@ -1,37 +1,26 @@
 package day12
 
 // part 1
-def sumOfSpringConfigurations(input: String) =
-  input.linesIterator.map(numberOfSpringConfigurations).sum
+def sumOfArrangements(input: String) =
+  input.linesIterator.map(parseLine).map(arrangements).sum
 
-def numberOfSpringConfigurations(line: String) =
-  val (springs, damageGroupSizes) = parseLine(line)
+lazy val arrangements: ((String, Seq[Int])) => Long = memoize: (line, sizes) =>
+  if sizes.isEmpty then if line.contains('#') then 0L else 1L
+  else if line.length < sizes.head then 0L
+  else
+    line.head match
+      case '.' => arrangements((line.tail, sizes))
+      case '#' =>
+        val (sizeBlock, rest) = line.splitAt(sizes.head)
+        if sizeBlock.contains('.') || rest.nonEmpty && rest.head == '#' then 0L
+        else arrangements(('.' +: rest.tail, sizes.tail))
+      case '?' =>
+        arrangements(('.' +: line.tail, sizes))
+          + arrangements(('#' +: line.tail, sizes))
 
-  val memo = scala.collection.mutable.Map[(String, Seq[Int]), Long]()
-  def arrangements(line: String, sizes: Seq[Int]): Long =
-    val memoValue = memo.get((line, sizes))
-    if memoValue.isDefined then return memoValue.get
-
-    val result =
-      if sizes.isEmpty then if line.contains('#') then 0L else 1L
-      else if line.length < sizes.head then 0L
-      else
-        line.head match
-          case '.' => arrangements(line.tail, sizes)
-          case '#' =>
-            val (sizeBlock, rest) = line.splitAt(sizes.head)
-            if sizeBlock.contains('.')
-              || rest.headOption.map(_ == '#').getOrElse(false)
-            then 0L
-            else arrangements('.' +: rest.tail, sizes.tail)
-          case '?' =>
-            arrangements('.' +: line.tail, sizes) +
-              arrangements('#' +: line.tail, sizes)
-
-    memo((line, sizes)) = result
-    result
-
-  arrangements(springs, damageGroupSizes)
+def memoize[T, R](f: T => R): T => R =
+  val memo = scala.collection.mutable.Map[T, R]()
+  x => memo.getOrElseUpdate(x, f(x))
 
 def parseLine(line: String) =
   val s"$springs $constraints" = line: @unchecked
@@ -40,12 +29,10 @@ def parseLine(line: String) =
 
 // part 2
 def sumOfUnfoldedSpringConfigurations(input: String) =
-  input.linesIterator.map(unfold).map(numberOfSpringConfigurations).sum
+  sumOfArrangements(input.linesIterator.map(unfold).mkString("\n"))
 
 def unfold(line: String): String =
   val s"$springs $constraints" = line: @unchecked
-  val unfoldedSprings          = repeat(springs, 5).mkString("?")
-  val unfoldedConstraints      = repeat(constraints, 5).mkString(",")
+  val unfoldedSprings          = Seq.fill(5)(springs).mkString("?")
+  val unfoldedConstraints      = Seq.fill(5)(constraints).mkString(",")
   s"$unfoldedSprings $unfoldedConstraints"
-
-def repeat[T](x: T, n: Int) = Iterator.continually(x).take(n)
