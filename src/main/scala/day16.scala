@@ -66,4 +66,5 @@ def maxNumberOfEnergizedTiles(input: String) =
     ++ cave.cols.map(c => Beam(Position(c, cave.rows.last), Up))
     ++ cave.cols.map(c => Beam(Position(c, 0), Down))
 
-  boundaryBeams.map(energizedTiles(cave, _).size).max
+  import scala.collection.parallel.CollectionConverters.*
+  boundaryBeams.par.map(energizedTiles(cave, _).size).max

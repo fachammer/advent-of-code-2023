@@ -29,6 +29,7 @@ lazy val root = project.in(file(".")).settings(
     "com.lihaoyi"   %% "pprint"     % "0.7.0",
     "com.lihaoyi"   %% "sourcecode" % "0.3.1",
     "org.scalatest" %% "scalatest"  % "3.2.17" % "test",
+    "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   ),
   Jmh / sourceDirectory     := (Test / sourceDirectory).value,
   Jmh / classDirectory      := (Test / classDirectory).value,
