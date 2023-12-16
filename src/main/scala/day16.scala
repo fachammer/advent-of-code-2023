@@ -5,9 +5,17 @@ import scala.collection.mutable.Stack
 // part 1
 type Cave = Vector[Vector[Char]]
 case class Position(col: Int, row: Int)
+enum Direction:
+  case Up
+  case Left
+  case Down
+  case Right
+
+import Direction.*
+
 def numberOfEnergizedTiles(input: String) =
   val cave = input.linesIterator.map(_.toVector).toVector
-  energizedTiles(cave).size
+  energizedTiles(cave, Beam.fresh(0, 0, Right)).size
 
 extension (cave: Cave)
   def apply(col: Int, row: Int) = cave(row)(col)
@@ -15,38 +23,31 @@ extension (cave: Cave)
     (0 until cave.length).contains(row)
       && (0 until cave(0).length).contains(col)
 
-def energizedTiles(cave: Cave): Set[Position] =
-  enum Direction:
-    case Up
-    case Left
-    case Down
-    case Right
+var id = 0
+def nextId =
+  id += 1
+  id
 
-  import Direction.*
+case class Beam(id: Int, startCol: Int, startRow: Int, direction: Direction):
+  def position = Position(startCol, startRow)
+  def nextPosition =
+    val (col, row) = direction match
+      case Up    => (startCol, startRow - 1)
+      case Left  => (startCol - 1, startRow)
+      case Right => (startCol + 1, startRow)
+      case Down  => (startCol, startRow + 1)
+    Position(col, row)
 
-  var id = 0
-  def nextId =
-    id += 1
-    id
+  def positionDirection = (position, direction)
 
-  case class Beam(id: Int, startCol: Int, startRow: Int, direction: Direction):
-    def position = Position(startCol, startRow)
-    def nextPosition =
-      val (col, row) = direction match
-        case Up    => (startCol, startRow - 1)
-        case Left  => (startCol - 1, startRow)
-        case Right => (startCol + 1, startRow)
-        case Down  => (startCol, startRow + 1)
-      Position(col, row)
+object Beam:
+  def fresh(startCol: Int, startRow: Int, direction: Direction): Beam =
+    Beam(nextId, startCol, startRow, direction)
 
-    def positionDirection = (position, direction)
-
-  object Beam:
-    def fresh(startCol: Int, startRow: Int, direction: Direction): Beam =
-      Beam(nextId, startCol, startRow, direction)
+def energizedTiles(cave: Cave, initialBeam: Beam): Set[Position] =
 
   import scala.collection.mutable
-  val stack          = Stack(Beam.fresh(0, 0, Right))
+  val stack          = Stack(initialBeam)
   val visitedBeams   = mutable.Set.empty[(Position, Direction)]
   val energizedTiles = mutable.Set.empty[Position]
 
@@ -102,3 +103,15 @@ def energizedTiles(cave: Cave): Set[Position] =
         case _ => ???
 
   energizedTiles.toSet
+
+// part 2
+def maxNumberOfEnergizedTiles(input: String) =
+  val cave       = input.linesIterator.map(_.toVector).toVector
+  val rightBeams = (0 until cave.length).map(Beam.fresh(0, _, Right))
+  val leftBeams =
+    (0 until cave.length).map(Beam.fresh(cave(0).length - 1, _, Left))
+  val upBeams = (0 until cave(0).length).map(Beam.fresh(_, cave.length - 1, Up))
+  val downBeams = (0 until cave(0).length).map(Beam.fresh(_, 0, Down))
+
+  val startBeams = rightBeams ++ leftBeams ++ upBeams ++ downBeams
+  startBeams.map(energizedTiles(cave, _).size).max
