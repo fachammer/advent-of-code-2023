@@ -16,122 +16,75 @@ case class Grid(grid: Vector[Vector[Int]]):
       (col, row + offset),
       (col - offset, row),
       (col, row - offset),
-    )
-      .filter(isInBounds.tupled)
+    ).filter(isInBounds.tupled)
 object Grid:
   def parse(input: String): Grid =
     Grid(input.linesIterator.map(_.map(_.asDigit).toVector).toVector)
 
-def minimumHeatLoss(input: String) =
-  val grid = Grid.parse(input)
-  type Position = (Int, Int)
-  case class Node(last4: Seq[Position])
-  val initialNode = Node(Seq((0, 0)))
+type Position = (Int, Int)
+extension (pos: Position)
+  def col                       = pos._1
+  def row                       = pos._2
+  def -(other: Position)        = (pos._1 - other._1, pos._2 - other._2)
+  def dot(other: Position): Int = pos._1 * other._1 + pos._2 * other._2
+  def isOrthogonalTo(other: Position): Boolean = dot(other) == 0
+  def manhattanLength: Int                     = col.abs + row.abs
 
-  def areOnStraightLine(positions: Position*) =
-    positions.forall { case (col, _) => col == positions.head._1 }
-      || positions.forall { case (_, row) => row == positions.head._2 }
+case class Node(last2: Seq[Position]):
+  def position = last2.head
 
-  extension (node: Node)
-    def adjacentNodes: Seq[(Node, Int)] =
-      val adjacent = node.last4 match
-        case current :: Nil => grid.neighborhood4.tupled(current)
-        case all @ (current :: previous :: _) =>
-          grid.neighborhood4.tupled(current).filterNot(_ == previous).filter(
-            p => all.size < 4 || !areOnStraightLine((p +: all)*),
-          )
-
-      adjacent.map(p => (Node((p +: node.last4).take(4)), grid.at.tupled(p)))
-
-  import scala.math.Ordering.Implicits.*
-  given Ordering[(Node, Option[Node], Int)] = Ordering.by {
-    case (_, _, weight) =>
-      -weight
-  }
-  import scala.collection.mutable
-  val nodesToProcess =
-    mutable.PriorityQueue((initialNode, Option.empty[Node], 0))
-  val visitedNodes = mutable.HashMap.empty[Node, (Option[Node], Int)]
-  while nodesToProcess.nonEmpty do
-    val (node, predecessor, totalWeight) = nodesToProcess.dequeue()
-    if !visitedNodes.contains(node) || visitedNodes(node)._2 > totalWeight then
-      visitedNodes.put(node, (predecessor, totalWeight))
-      val nextNodes = node.adjacentNodes.map { case (n, weight) =>
-        (n, Some(node), totalWeight + weight)
-      }
-      nodesToProcess.enqueue(nextNodes*)
-
-  visitedNodes.filter { case (node, _) =>
-    node.last4.head == (grid.cols.last, grid.rows.last)
-  }.map { case (_, (_, pathLength)) => pathLength }.min
+def minimumHeatLossWithStandardCrucible(input: String) =
+  minimumHeatLoss(input, 1 to 3)
 
 // part 2
 def minimumHeatLossWithUltraCrucible(input: String) =
+  minimumHeatLoss(input, 4 to 10)
+
+def minimumHeatLoss(input: String, movementRange: Range) =
   val grid = Grid.parse(input)
-  type Position = (Int, Int)
-  case class Node(last2: Seq[Position])
-  val initialNode = Node(Seq((0, 0)))
+  dijkstra[Node](adjacentNodes(grid, movementRange))(Node(Seq((0, 0)))).flatMap:
+    (k, v) => Option.when(k.position == (grid.cols.last, grid.rows.last))(v)
+  .min
 
-  extension (pos: Position)
-    def col                  = pos._1
-    def row                  = pos._2
-    def -(other: Position)   = (pos._1 - other._1, pos._2 - other._2)
-    def dot(other: Position) = pos._1 * other._1 + pos._2 * other._2
+def adjacentNodes(grid: Grid, offsets: Iterable[Int])(node: Node) =
+  val current @ (col, row) = node.position
+  val possibleNeighbors = for
+    offset   <- offsets.toSet
+    neighbor <- grid.neighborhood4Offset(col, row, offset)
+  yield neighbor
 
-  extension (node: Node)
-    def adjacentNodes: Seq[(Node, Int)] =
-      val (col, row) = node.last2.head
-      val possibleNeighbors = for
-        offset   <- 4 to 10
-        neighbor <- grid.neighborhood4Offset(col, row, offset)
-      yield neighbor
-      val adjacent = node.last2 match
-        case (col, row) :: Nil => possibleNeighbors
-        case all @ (current :: previous :: _) =>
-          val direction = current - previous
-          def isInOrthogonalDirection(p: Position) =
-            direction.dot(p - current) == 0
+  val adjacent = node.last2 match
+    case (col, row) :: Nil => possibleNeighbors
+    case (current :: previous :: Nil) =>
+      possibleNeighbors.filter: neighbor =>
+        (neighbor - current).isOrthogonalTo(current - previous)
 
-          possibleNeighbors.filter(isInOrthogonalDirection)
+  def heatLossInStraightLine(from: Position, toPos: Position) =
+    val difference = toPos - from
+    val colOffset  = if difference.col.sign == 0 then 1 else difference.col.sign
+    val rowOffset  = if difference.row.sign == 0 then 1 else difference.row.sign
+    val colRange   = from.col to toPos.col by colOffset
+    val rowRange   = from.row to toPos.row by rowOffset
+    val heatLosses = for col <- colRange; row <- rowRange
+    yield grid.at(col, row)
+    heatLosses.sum - grid.at.tupled(from)
 
-      def heatLossStraightLine(from: Position, toPos: Position) =
-        if from.row == toPos.row then
-          val offset = if from.col < toPos.col then 1 else -1
-          ((from.col + offset) to toPos.col by offset).map(
-            grid.at(_, from.row),
-          ).sum
-        else if from.col == toPos.col then
-          val offset = if from.row < toPos.row then 1 else -1
-          ((from.row + offset) to toPos.row by offset).map(
-            grid.at(from.col, _),
-          ).sum
-        else ???
+  adjacent.map: neighbor =>
+    (Node(Seq(neighbor, current)), heatLossInStraightLine(current, neighbor))
 
-      adjacent.map(p =>
-        (
-          Node(Seq(p, node.last2.head)),
-          heatLossStraightLine(node.last2.head, p),
-        ),
-      )
-
-  import scala.math.Ordering.Implicits.*
-  given Ordering[(Node, Option[Node], Int)] = Ordering.by {
-    case (_, _, weight) =>
-      -weight
-  }
+def dijkstra[T](adjacent: T => Iterable[(T, Int)])(start: T) =
   import scala.collection.mutable
-  val nodesToProcess =
-    mutable.PriorityQueue((initialNode, Option.empty[Node], 0))
-  val visitedNodes = mutable.HashMap.empty[Node, (Option[Node], Int)]
+  given Ordering[(T, Int)] = Ordering.by((_, length) => -length)
+  val nodesToProcess       = mutable.PriorityQueue((start, 0))
+  val visitedNodes         = mutable.HashMap.empty[T, Int]
   while nodesToProcess.nonEmpty do
-    val (node, predecessor, totalWeight) = nodesToProcess.dequeue()
-    if !visitedNodes.contains(node) || visitedNodes(node)._2 > totalWeight then
-      visitedNodes.put(node, (predecessor, totalWeight))
-      val nextNodes = node.adjacentNodes.map { case (n, weight) =>
-        (n, Some(node), totalWeight + weight)
-      }
-      nodesToProcess.enqueue(nextNodes*)
+    val (node, totalWeight) = nodesToProcess.dequeue()
+    if !visitedNodes.contains(node) || visitedNodes(node) > totalWeight then
+      visitedNodes.put(node, totalWeight)
+      val nextNodes =
+        adjacent(node).map: (n, weight) =>
+          (n, totalWeight + weight)
+      nextNodes.foreach: n =>
+        nodesToProcess.enqueue(n)
 
-  visitedNodes.filter { case (node, _) =>
-    node.last2.head == (grid.cols.last, grid.rows.last)
-  }.map { case (_, (_, pathLength)) => pathLength }.min
+  visitedNodes.toMap
