@@ -49,31 +49,17 @@ def lagoonSize(steps: Iterator[(String, Int)]) =
       case Left(from, length)  => length
       case Up(from, length)    => length
 
-    def extended = this match
-      case Right(from, length) => Right(from - direction, length + 1)
-      case Down(from, length)  => Down(from - direction, length + 1)
-      case Left(from, length)  => Left(from - direction, length + 1)
-      case Up(from, length)    => Up(from - direction, length + 1)
-
     val minCol = fromPosition.col.min(toPosition.col)
     val maxCol = fromPosition.col.max(toPosition.col)
     val minRow = fromPosition.row.min(toPosition.row)
     val maxRow = fromPosition.row.max(toPosition.row)
 
   import Line.*
-  case class Direction(col: Int, row: Int):
-    def rightNormal = Direction(-row, col)
+  case class Direction(col: Int, row: Int)
   case class Position(col: Int, row: Int):
     def +(direction: Direction) =
       Position(col + direction.col, row + direction.row)
-    def -(direction: Direction) =
       Position(col - direction.col, row - direction.row)
-    def -(position: Position) =
-      Direction(col - position.col, row - position.row)
-    def neighborhood4 =
-      Seq((col + 1, row), (col, row + 1), (col - 1, row), (col, row - 1)).map(
-        (c, r) => Position(c, r),
-      )
 
   var position = Position(0, 0)
   val lines    = mutable.Buffer[Line]()
@@ -98,9 +84,7 @@ def lagoonSize(steps: Iterator[(String, Int)]) =
     )
 
   def rowIntersectingLines(row: Int) =
-    sortedLines.filter { line =>
-      (line.minRow to line.maxRow).contains(row)
-    }
+    sortedLines.filter(line => (line.minRow to line.maxRow).contains(row))
 
   val positions = lines.flatMap(l => Seq(l.fromPosition, l.toPosition))
   val minCol    = positions.minBy(_.col).col
@@ -111,36 +95,24 @@ def lagoonSize(steps: Iterator[(String, Int)]) =
     val linesInRow = rowIntersectingLines(row)
     case class Crossing(col: Int, length: Int, afterwardsInside: Boolean)
 
-    val crossings = mutable.Buffer[Crossing]()
-    var index     = 0
-    var inside    = false
-    while index < linesInRow.length do
-      if index == linesInRow.length - 1 then
-        val line = linesInRow(index)
+    val crossings          = mutable.Buffer[Crossing]()
+    val linesInRowIterator = linesInRow.iterator.buffered
+    var inside             = false
+    while linesInRowIterator.hasNext do
+      val line = linesInRowIterator.next()
+      if !linesInRowIterator.hasNext then
         crossings.append(
           Crossing(line.minCol, line.maxCol - line.minCol + 1, false),
         )
-        index += 1
       else
-        val line     = linesInRow(index)
-        val nextLine = linesInRow(index + 1)
-
-        line match
-          case Up(_, _) | Down(_, _) =>
-          case _                     => throw Exception("line must be vertical")
-
-        (line, nextLine) match
+        (line, linesInRowIterator.head) match
           case (Up(_, _), Down(_, _)) | (Down(_, _), Up(_, _)) =>
             inside = !inside
             crossings.append(Crossing(line.minCol, 1, inside))
-            index += 1
           case (Up(_, _) | Down(_, _), Left(_, _) | Right(_, _)) =>
-            assert(index + 2 < linesInRow.length)
-            linesInRow(index + 2) match
-              case (Up(_, _) | Down(_, _)) =>
-              case _ => throw Exception("next next must be vertical")
-
-            (line, linesInRow(index + 2)) match
+            val nextLine     = linesInRowIterator.next()
+            val nextNextLine = linesInRowIterator.next()
+            (line, nextNextLine) match
               case (Up(_, _), Up(_, _)) | (Down(_, _), Down(_, _)) =>
                 inside = !inside
               case _ =>
@@ -148,14 +120,13 @@ def lagoonSize(steps: Iterator[(String, Int)]) =
             crossings.append(
               Crossing(nextLine.minCol, nextLine.lineLength, inside),
             )
-            index += 3
-          case _ => throw Exception("should not happen")
+          case _ => ???
 
-    inside = false
-    var col = minCol
+    var isInside = false
+    var col      = minCol
     for crossing <- crossings do
-      if inside then area += (crossing.col - col)
-      inside = crossing.afterwardsInside
+      if isInside then area += (crossing.col - col)
+      isInside = crossing.afterwardsInside
       col = crossing.col + crossing.length
       area += crossing.length
 
