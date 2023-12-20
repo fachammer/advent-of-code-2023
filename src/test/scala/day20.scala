@@ -10,4 +10,5 @@ class Test extends DayTest:
       "example2" -> 11687500,
       "input"    -> 730797576,
     ),
+    Part(part2, "input" -> 226732077152351L),
   )
