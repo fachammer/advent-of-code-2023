@@ -7,7 +7,15 @@
     let pkgs = nixpkgs.legacyPackages.aarch64-darwin;
     in {
       devShells.aarch64-darwin.default = pkgs.mkShell {
-        buildInputs = with pkgs; [ scala_3 sbt nil nixfmt jdk visualvm ];
+        buildInputs = with pkgs; [
+          scala_3
+          sbt
+          nil
+          nixfmt
+          jdk
+          visualvm
+          graphviz
+        ];
       };
     };
 }
