@@ -1,84 +1,67 @@
 package day22
 
-// part 1
-def part1(input: String) =
-  safelyDisintegrableBricks(parseBricks(input)).size
-
-def parseBricks(input: String): Seq[Brick] =
-  input.linesIterator.zipWithIndex.map:
-    case (s"$startX,$startY,$startZ~$endX,$endY,$endZ", row) =>
-      Brick(
-        row.toString,
-        Position(startX.toInt, startY.toInt, startZ.toInt),
-        Position(endX.toInt, endY.toInt, endZ.toInt),
-      )
-  .toSeq
 case class Position(x: Int, y: Int, z: Int)
-case class Brick(id: String, from: Position, to: Position):
-  def downOne = Brick(id, from.copy(z = from.z - 1), to.copy(z = to.z - 1))
-  def minX    = from.x min to.x
-  def maxX    = from.x max to.x
-  def minY    = from.y min to.y
-  def maxY    = from.y max to.y
-  def minZ    = from.z min to.z
-  def maxZ    = from.z max to.z
+case class Brick(id: Int, from: Position, to: Position):
+  val xRange = from.x to to.x
+  val yRange = from.y to to.y
+  val zRange = from.z to to.z
+  val maxZ   = zRange.end
+  val xy     = for x <- xRange; y <- yRange yield (x, y)
 
-  def xRange = minX to maxX
-  def yRange = minY to maxY
-  def zRange = minZ to maxZ
+  def withNewZ(newZ: Int) =
+    Brick(id, from.copy(z = newZ), to.copy(z = newZ + to.z - from.z))
 
   def intersects(other: Brick) =
     xRange.interects(other.xRange)
       && yRange.interects(other.yRange)
       && zRange.interects(other.zRange)
 
+type BricksSnapshot = Set[Brick]
+object BricksSnapshot:
+  def parse(input: String): BricksSnapshot =
+    Set.from:
+      input.linesIterator.zipWithIndex.map:
+        case (s"$fromX,$fromY,$fromZ~$toX,$toY,$toZ", row) =>
+          val from = Position(fromX.toInt, fromY.toInt, fromZ.toInt)
+          val to   = Position(toX.toInt, toY.toInt, toZ.toInt)
+          Brick(row, from, to)
+
 def settle(bricks: Iterable[Brick]) =
-  def settleBrick(bricks: Iterable[Brick])(brick: Brick): Brick =
-    val next = brick.downOne
-    if next.minZ == 0 || bricks.exists(next.intersects) then brick
-    else settleBrick(bricks)(next)
+  def settleBrick(maxHeights: Map[(Int, Int), Int], brick: Brick) =
+    val intersectingZ = brick.xy.map(maxHeights).max
+    brick.withNewZ(intersectingZ + 1)
 
-  given Ordering[Brick] = Ordering.by(b => (b.from.z, b.from.y, b.from.x))
-  val sortedBricks      = bricks.toSeq.sorted
-  val brickSet          = Set(sortedBricks*)
-  sortedBricks.foldLeft(brickSet): (acc, next) =>
-    assert(acc.contains(next))
-    val withoutNext  = acc.diff(Set(next))
-    val settledBrick = settleBrick(withoutNext)(next)
-    // withoutNext.d
-    // withoutNext(settledBrick).d
-    // withoutNext.find(_.to == settledBrick.to).d
-    // settledBrick.d
-    assert(!withoutNext.contains(settledBrick))
-    val withSettled = withoutNext ++ Set(settledBrick)
-    assert(withSettled.size == withoutNext.size + 1)
-    withSettled
+  val sortedBricks = bricks.toSeq.sortBy(b => (b.from.z, b.from.y, b.from.x))
+  val maxHeights   = Map[(Int, Int), Int]().withDefaultValue(0)
+  val (settledBricks, _) =
+    sortedBricks.foldLeft((Vector.empty[Brick], maxHeights)): (acc, brick) =>
+      val (settledBricks, maxHeights) = acc
+      val settledBrick                = settleBrick(maxHeights, brick)
+      val updatedMaxHeights = settledBrick.xy.foldLeft(maxHeights):
+        (acc, key) => acc.updated(key, acc(key).max(settledBrick.maxZ))
 
-def safelyDisintegrableBricks(bricks: Seq[Brick]) =
-  val settled = settle(bricks)
-  settled.filter(numberOfFallenBricksWithout(settled, _) == 0)
+      (settledBricks :+ settledBrick, updatedMaxHeights)
 
-def numberOfFallenBricksWithout(fallen: Set[Brick], brick: Brick) =
-  assert(fallen.contains(brick))
-  val withoutBrick = fallen.diff(Set(brick))
-  assert(withoutBrick.size == fallen.size - 1)
-  val settledWithoutBrick = settle(withoutBrick)
-  assert(withoutBrick.size == settledWithoutBrick.size)
-  val numberOfFallenBricks = settledWithoutBrick.diff(withoutBrick).size.toLong
-  assert(numberOfFallenBricks <= settledWithoutBrick.size)
-  numberOfFallenBricks
+  settledBricks
+
+def unsettledBricksWhenRemoving(settled: Set[Brick], brick: Brick) =
+  val withoutBrick        = settled - brick
+  val settledWithoutBrick = settle(withoutBrick).toSet
+  settledWithoutBrick -- withoutBrick
 
 extension (range: Range)
   def interects(other: Range) =
-    range.contains(other.start)
-      || range.contains(other.end)
-      || other.contains(range.start)
-      || other.contains(range.end)
+    range.contains(other.start) || range.contains(other.end)
+      || other.contains(range.start) || other.contains(range.end)
+
+extension (a: Int) def minMax(b: Int) = if a <= b then (a, b) else (b, a)
+
+// part 1
+def safelyDisintegrableBricks(input: String) =
+  val settled = settle(BricksSnapshot.parse(input)).toSet
+  settled.count(unsettledBricksWhenRemoving(settled, _).isEmpty)
 
 // part 2
-def part2(input: String) =
-  val bricks = parseBricks(input)
-  assert(bricks.forall(b => b.from.z <= b.to.z))
-  val fallen = settle(bricks)
-  assert(bricks.size == fallen.size)
-  fallen.iterator.map(numberOfFallenBricksWithout(fallen, _)).sum
+def sumOfSinglyUnsettledBricks(input: String) =
+  val settled = settle(BricksSnapshot.parse(input)).toSet
+  settled.iterator.map(unsettledBricksWhenRemoving(settled, _).size).sum
