@@ -9,6 +9,11 @@ class Test extends DayTest:
       "example" -> 5,
       // "input"   -> 519,
     ),
+    Part(
+      part2,
+      "example" -> 7,
+      "input"   -> 109531,
+    ),
   )
 
 import org.openjdk.jmh.annotations.*
