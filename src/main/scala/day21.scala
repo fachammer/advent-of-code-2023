@@ -1,113 +1,99 @@
 package day21
 
 // part 1
-def numberOfPossibleEndPositions(requiredSteps: Int)(input: String) =
-  val grid = input.linesIterator.map(_.toVector).toVector
+def reachableGardenPlotsOnFiniteLand(requiredSteps: Int)(input: String) =
+  val grid                     = Grid.parse(input)
+  val gridVisitor: GridVisitor = grid.isGardenPlotFinite
+  gridVisitor.reachableGardenPlots(grid.startPosition, requiredSteps)
 
-  val startPosition = grid.zipWithIndex.flatMap: (line, row) =>
-    line.zipWithIndex.map: (char, col) =>
-      (col, row, char)
-  .find((_, _, char) => char == 'S')
-    .map((col, row, _) => (col, row))
-    .get
+case class Grid(grid: Vector[Vector[Char]]):
+  val startPosition = (for
+    (line, row) <- grid.zipWithIndex
+    (char, col) <- line.zipWithIndex
+    if char == 'S'
+  yield (col, row)).head
+  val cols = 0 until grid(0).length
+  val rows = 0 until grid.length
 
-  import scala.collection.mutable
-  val memo = mutable.HashMap.empty[((Int, Int), Int), Set[(Int, Int)]]
-  def reachablePositionsInSteps(
-      startPosition: (Int, Int),
-      remainingSteps: Int,
-  ): Set[(Int, Int)] =
-    if memo.contains((startPosition, remainingSteps)) then
-      return memo((startPosition, remainingSteps))
-    val result =
-      if remainingSteps == 0 then Set(startPosition)
-      else if remainingSteps == 1 then
-        val (col, row) = startPosition
-        Set((col + 1, row), (col, row + 1), (col - 1, row), (col, row - 1))
-          .filter: (c, r) =>
-            (0 until grid.length).contains(r)
-              && (0 until grid(0).length).contains(c)
-          .filter((c, r) => grid(r)(c) != '#')
-      else
-        val lowerHalf  = remainingSteps / 2
-        val upperHalf  = remainingSteps - lowerHalf
-        val (col, row) = startPosition
-        reachablePositionsInSteps(startPosition, lowerHalf).flatMap(
-          reachablePositionsInSteps(_, upperHalf),
-        )
-    memo((startPosition, remainingSteps)) = result
-    result
+  def apply(col: Int, row: Int)    = grid(row)(col)
+  def isInside(col: Int, row: Int) = cols.contains(col) && rows.contains(row)
+  def isGardenPlotFinite(col: Int, row: Int) =
+    isInside(col, row) && this(col, row) != '#'
 
-  (0 until grid.length).flatMap(row =>
-    (0 until grid(0).length).map(col => (col, row)),
-  ).count((c, r) => grid(r)(c) != '#')
-  reachablePositionsInSteps(startPosition, requiredSteps).size
+  def isGardenPlotInfinite(col: Int, row: Int) =
+    this(mod(col, cols.end), mod(row, rows.end)) != '#'
+
+object Grid:
+  def parse(input: String) = Grid(input.linesIterator.map(_.toVector).toVector)
 
 // part 2
-def numberOfPossibleEndPositionsWithInfiniteMap(requiredSteps: Int)(
+def reachableGardenPlotsWithSpecialInput(gridLengthMultiple: Int)(
     input: String,
 ) =
-  val grid = input.linesIterator.map(_.toVector).toVector
+  val grid = Grid.parse(input)
+  assert(grid.startPosition == (65, 65))
+  assert(grid.cols.end == grid.rows.end)
+  assert(grid.cols.end == 131)
+  val startPosition        = grid.startPosition
+  val visitor: GridVisitor = grid.isGardenPlotInfinite
 
-  val startPosition = grid.zipWithIndex.flatMap: (line, row) =>
-    line.zipWithIndex.map: (char, col) =>
-      (col, row, char)
-  .find((_, _, char) => char == 'S')
-    .map((col, row, _) => (col, row))
-    .get
+  val steps = (0 to 3).map(65 + _ * 131)
+  val sizes = steps.map(visitor.reachableGardenPlots(startPosition, _))
+  val Array(_, diff1, diff2, diff3) = sizes.higherOrderDifferencesUpTo(3)
+  assert(diff3.forall(_ == 0))
 
-  def visited(startPosition: (Int, Int), steps: Int) =
-    import scala.collection.mutable
-    var previousSteps = mutable.HashSet[(Int, Int)]()
-    var currentSteps  = mutable.HashSet[(Int, Int)](startPosition)
-    var nextSteps     = mutable.HashSet[(Int, Int)]()
-    var step          = 0
-    val evenVisited   = mutable.HashSet[(Int, Int)]()
-    val oddVisited    = mutable.HashSet[(Int, Int)]()
-    while step <= steps do
-      for (col, row) <- currentSteps do
-        if step % 2 == 0 then evenVisited.add((col, row))
-        else oddVisited.add((col, row))
-        val nextStepsFromCurrent =
-          Set((col + 1, row), (col, row + 1), (col - 1, row), (col, row - 1))
-            .filter: (c, r) =>
-              grid(mod(r, grid.length))(mod(c, grid(0).length)) != '#'
-            .filterNot(previousSteps.contains)
+  val quadratic     = diff2.head / 2
+  val linear        = diff1.head - quadratic
+  val constant      = sizes.head
+  val quadraticPoly = (n: Long) => quadratic * n * n + linear * n + constant
 
-        nextSteps.addAll(nextStepsFromCurrent)
+  quadraticPoly(gridLengthMultiple)
 
-      previousSteps = currentSteps
-      currentSteps = nextSteps
-      nextSteps = mutable.HashSet.empty
-      step += 1
+def reachableGardenPlotsOnInfiniteLand(requiredSteps: Int)(input: String) =
+  val grid                     = Grid.parse(input)
+  val gridVisitor: GridVisitor = grid.isGardenPlotInfinite
+  gridVisitor.reachableGardenPlots(grid.startPosition, requiredSteps)
+
+@FunctionalInterface
+trait GridVisitor:
+  def isGardenPlot(col: Int, row: Int): Boolean
+  def reachableGardenPlots(startPosition: (Int, Int), steps: Int) =
+    val initialSteps           = Set(startPosition)
+    val initialEvenVisited     = 0
+    val initialOddVisited      = 0
+    val initialPreviousVisited = Set.empty[(Int, Int)]
+    val (_, _, evenVisited, oddVisited) = (0 to steps).foldLeft(
+      (
+        initialSteps,
+        initialPreviousVisited,
+        initialEvenVisited,
+        initialOddVisited,
+      ),
+    ) { case ((currentSteps, previousVisited, evenVisited, oddVisited), step) =>
+      val nextSteps = currentSteps.flatMap: (col, row) =>
+        neighborhood4(col, row).filter(isGardenPlot)
+          .filterNot(previousVisited.contains)
+      val evenAdded = ((step + 1) % 2) * currentSteps.size
+      val oddAdded  = (step       % 2) * currentSteps.size
+      (nextSteps, currentSteps, evenVisited + evenAdded, oddVisited + oddAdded)
+    }
 
     if steps % 2 == 0 then evenVisited else oddVisited
-
-  val sizes = (0 to 3).map(i => visited(startPosition, 65 + i * 131).size)
-
-  extension (seq: Seq[Int])
-    def differences =
-      seq.zip(seq.tail).map((left, right) => right - left)
-
-  val firstOrderDifferences  = sizes.differences
-  val secondOrderDifferences = firstOrderDifferences.differences
-  val thirdOrderDifferences  = secondOrderDifferences.differences
-  assert(thirdOrderDifferences.forall(_ == 0))
-
-  val quadraticCoefficient = secondOrderDifferences.head / 2
-  val linearCoefficient    = firstOrderDifferences.head - quadraticCoefficient
-  val constantCoefficient  = sizes.head
-
-  val quadratic: Long => Long = n =>
-    quadraticCoefficient * n * n
-      + linearCoefficient * n
-      + constantCoefficient
-
-  assert((requiredSteps - startPosition._1) % grid.length == 0)
-  val repetitions = (requiredSteps.toLong - startPosition._1) / grid.length
-
-  quadratic(repetitions)
 
 def mod(x: Int, y: Int) =
   val m = x % y
   if m >= 0 then m else m + y
+
+def neighborhood4(col: Int, row: Int) =
+  Seq((col + 1, row), (col, row + 1), (col - 1, row), (col, row - 1))
+
+extension (seq: Seq[Int])
+  def differences(n: Int = 1): Seq[Int] =
+    assert(n >= 0)
+    if n == 0 then seq
+    else
+      val diff = seq.differences(n - 1)
+      diff.tail.zip(diff).map(_ - _)
+
+  def higherOrderDifferencesUpTo(order: Int): Array[Seq[Int]] =
+    (0 to order).map(seq.differences).toArray
