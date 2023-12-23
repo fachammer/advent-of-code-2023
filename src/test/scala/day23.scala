@@ -4,9 +4,6 @@ import day23.*
 given Day = Day(23)
 class Test extends DayTest:
   def parts = Seq(
-    Part(
-      part1,
-      "example" -> 94,
-      "input"   -> 1930,
-    ),
+    Part(part1, "example" -> 94, "input"  -> 1930),
+    Part(part2, "example" -> 154, "input" -> 6230),
   )
