@@ -2,6 +2,9 @@ package day24
 
 import debug.*
 import math.Numeric.Implicits.infixNumericOps
+import breeze.linalg.DenseMatrix
+import breeze.linalg.support.LiteralRow
+import breeze.linalg.DenseVector
 
 // part 1
 case class Vec2[T: Numeric](x: T, y: T):
@@ -36,13 +39,7 @@ extension [T: Numeric](number: T)
 case class HailStone(position: Vec2[Long], velocity: Vec2[Long])
 
 def hailStoneIntersections(min: Long, max: Long)(input: String) =
-  val hailStones = input.linesIterator.map:
-    case s"$px, $py, $_ @ $vx, $vy, $_" =>
-      HailStone(
-        Vec2(px.strip.toLong, py.strip.toLong),
-        Vec2(vx.strip.toLong, vy.strip.toLong),
-      )
-  .toSeq
+  val hailStones = parseHailStones(input)
 
   val intersections = hailStones.combinations(2).map:
     case Seq(left, right) => intersection(left, right)
@@ -103,3 +100,56 @@ def intersection(
         ),
       ),
     )
+
+def parseHailStones(input: String) =
+  input.linesIterator.map:
+    case s"$px, $py, $_ @ $vx, $vy, $_" =>
+      HailStone(
+        Vec2(px.strip.toLong, py.strip.toLong),
+        Vec2(vx.strip.toLong, vy.strip.toLong),
+      )
+  .toSeq
+
+def parseHailStones3d(input: String) =
+  input.linesIterator.map:
+    case s"$px, $py, $pz @ $vx, $vy, $vz" =>
+      (
+        Vec3(px.strip.toLong, py.strip.toLong, pz.strip.toLong),
+        Vec3(vx.strip.toLong, vy.strip.toLong, vz.strip.toLong),
+      )
+  .toSeq
+
+case class Vec3(x: Long, y: Long, z: Long):
+  def +(other: Vec3)   = Vec3(x + other.x, y + other.y, z + other.z)
+  def -(other: Vec3)   = Vec3(x - other.x, y - other.y, z - other.z)
+  def dot(other: Vec3) = x * other.x + y * other.y + z * other.z
+  def cross(other: Vec3) = Vec3(
+    y * other.z - z * other.y,
+    z * other.x - x * other.z,
+    x * other.y - y * other.x,
+  )
+  def normSquared = dot(this)
+  def toVector    = Vector(x, y, z)
+
+extension (t: Long) def *(vec: Vec3) = Vec3(t * vec.x, t * vec.y, t * vec.z)
+
+def oneShotHitAllPositionSum(input: String) =
+  val hailStones = parseHailStones3d(input)
+
+  val rhs = DenseVector[Long]:
+    hailStones.combinations(2).take(2).flatMap:
+      case Seq((lp, lv), (rp, rv)) => (lp.cross(lv) - rp.cross(rv)).toVector
+    .toArray
+
+  val rows = hailStones.combinations(2).take(2).flatMap {
+    case Seq((lp, lv), (rp, rv)) =>
+      Seq(
+        Seq(0, lv.z - rv.z, -(lv.y - rv.y), 0, -(lp.z - rp.z), lp.y - rp.y),
+        Seq(-(lv.z - rv.z), 0, lv.x - rv.x, lp.z - rp.z, 0, -(lp.x - rp.x)),
+        Seq(lv.y - rv.y, -(lv.x - rv.x), 0, -(lp.y - rp.y), lp.x - rp.x, 0),
+      )
+  }.map(_.map(_.toDouble)).toSeq
+
+  val matrix = DenseMatrix(rows*)
+  val result = matrix \ (rhs.map(_.toDouble))
+  breeze.linalg.sum(result(0 until 3)).round

@@ -9,4 +9,5 @@ class Test extends DayTest:
       hailStoneIntersections(200000000000000L, 400000000000000L),
       "input" -> 15262,
     ),
+    Part(oneShotHitAllPositionSum, "example" -> 47, "input" -> 695832176624149L),
   )
