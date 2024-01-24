@@ -195,6 +195,7 @@ case class LinearSystem(
 object LinearSystem:
   def empty = LinearSystem(Counter2(), Counter())
 
+// part 2
 def oneShotHitAllPositionSum(input: String) =
   val hailStones = parseHailStones3d(input).take(3)
 
